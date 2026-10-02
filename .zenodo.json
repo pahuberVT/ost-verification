@@ -1,0 +1,16 @@
+{
+  "title": "Orbit Mission Atlas and orbit data package for 'Verification of the Outer Space Treaty with active interrogation'",
+  "upload_type": "dataset",
+  "description": "Interactive atlas of the flown inspection fleets of the paper 'Verification of the Outer Space Treaty with active interrogation' (P. Huber) and the data needed for an independent check of the orbit calculations: the frozen Starlink TLE catalogue (7852 satellites, 2026-03-25), the fleet files and sized tours, the encounter files consumed by the detection analysis, the flown Orekit records (per-inspector summaries, checkpoints, closest approaches and the sha256 of the 60 s ephemeris archives, which are available from the author on request), and the per-platform display payloads with their schema (data/README.md). Four fleets: a hybrid of 4 passive fly-by S3 platforms and 16 co-orbit S1 platforms (f = 1), one routed fly-by S2 platform plus one S1 (f = 0.1), 69 S1 platforms (f = 1) and 17 S1 platforms (f = 0.1); all flown with a 100 m keep-out, no station crossing, no stuck inspector.",
+  "creators": [
+    {"name": "Huber, Patrick", "affiliation": "Center for Neutrino Physics, Department of Physics, Virginia Tech, Blacksburg, VA 24061, USA"}
+  ],
+  "keywords": ["Outer Space Treaty", "active interrogation", "satellite inspection", "Starlink", "orbit mechanics", "Orekit", "SGP4", "co-orbit rendezvous", "fly-by", "treaty verification"],
+  "license": "GPL-3.0",
+  "access_right": "open",
+  "related_identifiers": [
+    {"identifier": "https://pahuberVT.github.io/ost-verification/", "relation": "isSupplementTo", "scheme": "url"},
+    {"identifier": "https://github.com/pahuberVT/ost-verification", "relation": "isIdenticalTo", "scheme": "url"}
+  ],
+  "notes": "The 60 s ephemeris archives of the flown trajectories (2.8 GB, sha256 listed in data/flown/<run>/ephem_manifest.json) are not part of this record and are available from the author on request. Add the paper's DOI or arXiv identifier to related_identifiers once it exists."
+}

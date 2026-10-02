@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this atlas or data package, please cite it as below and cite the paper it accompanies."
+title: "Orbit Mission Atlas and orbit data package for 'Verification of the Outer Space Treaty with active interrogation'"
+type: dataset
+authors:
+  - family-names: Huber
+    given-names: Patrick
+    affiliation: "Center for Neutrino Physics, Department of Physics, Virginia Tech, Blacksburg, VA 24061, USA"
+    email: pahuber@vt.edu
+repository-code: "https://github.com/pahuberVT/ost-verification"
+url: "https://pahuberVT.github.io/ost-verification/"
+license: GPL-3.0
+version: "1.0"
+date-released: "2026-10-02"
+keywords:
+  - Outer Space Treaty
+  - active interrogation
+  - satellite inspection
+  - Starlink
+  - orbit mechanics
+  - Orekit
+  - SGP4
