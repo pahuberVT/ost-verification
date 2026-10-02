@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23108549.svg)](https://doi.org/10.5281/zenodo.23108549)
+
 # Reproducibility data package — orbit calculations
 
 Data behind the atlas at https://pahuberVT.github.io/ost-verification/ and the orbit results of the
@@ -416,5 +418,6 @@ from the author.
 
 Contact: Patrick Huber, pahuber@vt.edu. This package is published in the repository
 https://github.com/pahuberVT/ost-verification under the GNU General Public License v3.0 (its LICENSE
-file). A citable, versioned archive with a DOI (Zenodo) is planned; until it exists, cite the repository
-and the commit of the page build given in `../manifest.json` (`code_commit`).
+file). Archived on Zenodo: DOI 10.5281/zenodo.23108549 (https://doi.org/10.5281/zenodo.23108549), record of
+GitHub release v1.0 (2026-10-02); later releases become new versions under the same concept DOI. Cite the DOI
+and the page build commit given in `../manifest.json` (`code_commit`).

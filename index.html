@@ -1947,7 +1947,7 @@
         (m.git?" · commit "+(String(m.git).indexOf(" ")<0?String(m.git).slice(0,10):String(m.git)):"")+
         (m.catalogue?" · catalogue sha12 "+m.catalogue:"")+
         (man.code_commit?" · page code commit "+String(man.code_commit).slice(0,10):"")+
-        (man.built_utc?" · built "+man.built_utc:"")+" — "+A.prov+
+        (man.built_utc?" · built "+man.built_utc:"")+(man.doi?" · archived: doi:"+man.doi+" (https://doi.org/"+man.doi+", data/README.md)":"")+" — "+A.prov+
         " Imagery: NASA Blue Marble and Earth at Night, public domain.";
     }catch(err){
       el("title").textContent="This view failed to draw";

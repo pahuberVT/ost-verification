@@ -1,4 +1,6 @@
 # ost-verification
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23108549.svg)](https://doi.org/10.5281/zenodo.23108549)
 Orbit and other data related to OST verification in space
 
 ## Orbit Mission Atlas
@@ -17,3 +19,6 @@ catalogue, the fleet files and sized tours, the encounter files the detection an
 records (summaries, checkpoints, closest approaches, archive hashes) and the schema of the per-platform
 payloads under `payloads/`. The 60 s ephemeris archives (2.8 GB) are available from the author on request.
 
+## Citation
+
+Archived on Zenodo, DOI [10.5281/zenodo.23108549](https://doi.org/10.5281/zenodo.23108549) (release v1.0). See `CITATION.cff`.

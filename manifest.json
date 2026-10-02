@@ -2,9 +2,10 @@
  "schema": "atlas-v34",
  "dev": false,
  "dev_note": null,
- "built_utc": "2026-10-02T18:25:58Z",
- "code_commit": "fe7191fed7c8bd016c9113c9ddf1d3e4f179716d",
+ "built_utc": "2026-10-02T18:53:04Z",
+ "code_commit": "314af7ebff1bf661376410ff7111e44501630d7e",
  "code_dirty": true,
+ "doi": "10.5281/zenodo.23108549",
  "catalogue": "payloads/catalogue.json",
  "catalogue_sha12": "1d492b3cf533",
  "tabs": [

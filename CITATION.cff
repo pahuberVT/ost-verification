@@ -11,6 +11,11 @@ repository-code: "https://github.com/pahuberVT/ost-verification"
 url: "https://pahuberVT.github.io/ost-verification/"
 license: GPL-3.0
 version: "1.0"
+doi: 10.5281/zenodo.23108549
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23108549
+    description: "Zenodo record of release v1.0"
 date-released: "2026-10-02"
 keywords:
   - Outer Space Treaty
