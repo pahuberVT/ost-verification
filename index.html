@@ -856,7 +856,7 @@
             "vec3 pend=vec3(0.30,0.40,0.56);",
             "vec3 done=vec3(1.00,0.62,0.26);",
             "gl_FragColor=vec4(mix(pend,done,vIns),mix(0.55,0.95,vIns));}"].join("\n")}));
-        catPts.visible=false;catPts.frustumCulled=false;
+        catPts.visible=SHOWCAT;catPts.frustumCulled=false;   /* the layer follows the carried toggle; it was built hidden on every tab switch while the button showed ON (PH 2026-10-02) */
         SKY.add(catPts);
       }
     }
