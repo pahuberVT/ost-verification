@@ -1,0 +1,1 @@
+{"lam": 2.0, "group": "98:500", "unit": "artifacts/tour_fleet/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose/final_liftall/unit_98_500_lam2.json", "inspector": 0, "n_targets": 1, "served": 1, "dv_total": 0.0, "t_total_d": 0.0, "stop": "all served", "dead_end": null, "legs": [], "t_leg_max_d": 600.0, "m_max": 400}

@@ -1,0 +1,2058 @@
+<meta charset="utf-8">
+<title>Orbit Mission Atlas</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Saira+Condensed:wght@500;600;700&display=swap">
+<style>
+  :root{
+    --void:#060911; --rail:#0a0f1c; --edge:#1b2740; --track:#131c30;
+    --ink:#e8edf5; --ink-2:#9dabc2; --muted:#6b7a95;
+    --drift:#ff8a3d; --target:#53d3ff; --burn:#ffd447; --grey:#3d4b66; --wing:#c084fc;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --disp:"Saira Condensed","IBM Plex Sans",system-ui,sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--void);color:var(--ink);font-family:var(--mono);
+       font-size:12px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  h1,h2{font-family:var(--disp);margin:0;letter-spacing:.01em}
+  button,select{font-family:var(--mono)}
+
+  /* One screen: header / arms / stage / timeline. Nothing scrolls but the rail. */
+  .app{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px;
+       height:100dvh;padding:12px 14px;max-width:2100px;margin:0 auto;overflow:hidden}
+  @media(max-width:860px),(max-height:560px){.app{height:auto;grid-template-rows:none;overflow:visible}}
+
+  /* The header is one fixed-height row on every tab: tabs differ in how many figures and how long an
+     eyebrow they carry, and a wrapping header changed height between tabs, moving everything below it
+     (PH 2026-09-30). Nothing wraps; what does not fit is clipped, never reflowed. */
+  header{display:flex;align-items:baseline;gap:22px;flex-wrap:nowrap;height:68px;min-height:68px;overflow:hidden;
+         padding-bottom:8px;border-bottom:1px solid var(--edge)}
+  .eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--drift);margin:0;
+           white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header>div:first-child{min-width:0;flex:1 1 auto}
+  h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  h1{font-size:clamp(19px,2.1vw,27px);font-weight:700;line-height:1;margin-top:2px}
+  .figs{display:flex;gap:20px;margin-left:auto;align-items:baseline;flex:none;white-space:nowrap}
+  .fig{display:flex;flex-direction:column;gap:0}
+  .fig b{font-family:var(--disp);font-size:20px;font-weight:700;line-height:1.05;
+         font-variant-numeric:tabular-nums}
+  /* The clock is rewritten every frame. Anything whose WIDTH changes there drags the rest of the
+     header with it sixty times a second, which reads as the whole page shivering. Monospaced, a
+     fixed character count, and a reserved box, so the digits change and nothing else moves. */
+  .fig.clock b,.fig.utc b{font-family:var(--mono);font-weight:500;white-space:pre;
+                          font-variant-numeric:tabular-nums}
+  .fig.clock,.fig.clock b{min-width:104px}
+  .fig.utc,.fig.utc b{min-width:150px}
+  .fig span{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .fig.clock b{color:var(--burn)}
+
+  .arms{display:flex;gap:2px;border:1px solid var(--edge);border-radius:3px;padding:2px;
+        background:var(--rail);width:fit-content;max-width:100%;flex-wrap:wrap}
+  .arms button{border:0;background:transparent;border-radius:2px;padding:5px 14px;cursor:pointer;
+               font-family:var(--disp);font-size:14px;font-weight:600;letter-spacing:.02em;
+               color:var(--ink-2)}
+  .arms button[aria-pressed="true"]{background:#16233c;color:var(--drift)}
+  .arms button:disabled{opacity:.35;cursor:not-allowed}
+  .arms button:hover:not(:disabled){color:var(--ink)}
+
+  main{display:grid;grid-template-columns:286px minmax(0,1fr);gap:12px;min-height:0}
+  @media(max-width:1060px){main{grid-template-columns:1fr}}
+  .rail{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto;
+        scrollbar-width:thin;padding-right:2px}
+  .panel{background:var(--rail);border:1px solid var(--edge);border-radius:3px;padding:8px 10px;
+         flex:none}
+  .panel h2{font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+            color:var(--muted);margin-bottom:6px;font-family:var(--mono);
+            display:flex;justify-content:space-between;gap:8px}
+  .kv{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin:0;font-size:11.5px}
+  .kv dt{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kv dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+  .kv dd.hi{color:var(--drift)}
+  .warn{border-left:2px solid var(--burn);padding-left:9px;color:var(--ink-2);font-size:11px;
+        line-height:1.5;margin:0}
+  /* the inset never changes size, whatever it draws */
+  .inset{margin:0;flex:none;background:var(--rail);border:1px solid var(--edge);border-radius:3px;
+         padding:8px 10px 7px;height:232px;display:flex;flex-direction:column}
+  .inset figcaption{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+                    height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .inset svg{width:100%;height:190px;display:block;margin-top:2px}
+  .inset .note{font-size:10px;color:var(--muted);height:16px;display:flex;
+               justify-content:space-between;gap:8px;white-space:nowrap;overflow:hidden}
+  /* the engine line is rewritten while the clock runs: one line each, fixed height, never reflows */
+  .eng{margin:0;font-size:11.5px;white-space:pre;overflow:hidden;text-overflow:ellipsis;height:17px;
+       color:var(--ink-2);font-variant-numeric:tabular-nums}
+  .eng.on{color:var(--burn);font-weight:500}
+  .eng.sub{font-size:10.5px;color:var(--muted);height:16px}
+  /* instruments: fixed monospaced boxes, rewritten live; nothing here may change width */
+  .ig{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+  .ib{display:flex;flex-direction:column;min-width:0}
+  .ib span{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);height:12px;white-space:nowrap}
+  .ib b{font-family:var(--mono);font-weight:500;font-size:13px;line-height:1.2;height:16px;white-space:pre;
+        overflow:hidden;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .ib b.hi{color:var(--burn)} .ib b.on{color:var(--burn)} .ib.wide{grid-column:1/-1}
+  .ib b.ko-ok{color:var(--ink-2)} .ib b.ko-amber{color:var(--burn)} .ib b.ko-red{color:var(--drift);font-weight:700}
+  .evlog{display:flex;flex-direction:column;gap:2px;font-size:10.5px}
+  .evr{display:grid;grid-template-columns:82px 1fr;gap:8px;padding:2px 4px;border-radius:2px;cursor:pointer;
+       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2);font-variant-numeric:tabular-nums}
+  .evr b{font-weight:500;color:var(--ink);white-space:pre}
+  .evr.past{color:var(--muted)} .evr.past b{color:var(--muted)}
+  .evr.next b{color:var(--burn)}
+  .evr:hover{background:#16233c}
+  .ledger{display:flex;flex-direction:column;gap:5px;font-size:11px}
+  .bar-row{display:grid;grid-template-columns:58px 1fr 78px;gap:8px;align-items:center}
+  .bar-row i{font-style:normal;color:var(--muted)}
+  .bar-row em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+  .bar-row em b{color:var(--ink);font-weight:500}
+  .rail-track{background:var(--track);height:7px;border-radius:1px;position:relative;overflow:hidden}
+  .rail-track s{position:absolute;inset:0;text-decoration:none;opacity:.18}
+  .rail-track u{position:absolute;top:0;bottom:0;left:0;text-decoration:none}
+
+  .view{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:8px;min-height:0}
+  /* nothing is ever drawn over the globe */
+  .globe{border:1px solid var(--edge);border-radius:3px;overflow:hidden;
+         background:radial-gradient(120% 90% at 50% 40%,#0a1324 0%,#060911 70%);min-height:0}
+  #sky{display:block;width:100%;height:100%}
+  @media(max-width:860px),(max-height:560px){.globe{height:58vh}}
+  .ctlbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .ctlbar .spacer{margin-left:auto}
+  .key{color:var(--muted);font-size:10.5px;white-space:nowrap}
+  .key i{display:inline-block;width:14px;height:2px;margin:0 5px 0 12px;vertical-align:middle}
+  button.ctl,.sel{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+       background:#101a2e;color:var(--ink);border:1px solid var(--edge);border-radius:2px;
+       padding:5px 10px;cursor:pointer}
+  button.ctl:hover{border-color:var(--drift);color:var(--drift)}
+  button.ctl[aria-pressed="true"]{background:var(--drift);border-color:var(--drift);color:#1a0d03}
+  button.ctl:focus-visible,.sel:focus-visible{outline:2px solid var(--target);outline-offset:1px}
+  .sel{display:inline-flex;align-items:center;gap:5px;color:var(--ink-2);padding:0 6px 0 9px;
+       text-transform:none}
+  .sel select{font-size:10.5px;background:transparent;color:var(--ink);border:0;padding:5px 2px;
+              cursor:pointer}
+  .sel option{background:#101a2e;color:var(--ink)}
+
+  footer{display:flex;flex-direction:column;gap:4px;min-height:0}
+  .tlwrap{border:1px solid var(--edge);border-radius:3px;background:var(--rail);height:132px;
+          position:relative}
+  .tlwrap svg{width:100%;height:100%;display:block;cursor:crosshair}
+  .tltabs{position:absolute;right:8px;top:6px;display:flex;gap:4px}
+  .tltabs button{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;background:#101a2e;
+                 color:var(--ink-2);border:1px solid var(--edge);border-radius:2px;padding:3px 8px;
+                 cursor:pointer}
+  .tltabs button[aria-pressed="true"]{color:var(--drift);border-color:var(--drift)}
+  details{color:var(--muted);font-size:10.5px;overflow:auto;max-height:26vh}
+  details summary{cursor:pointer;letter-spacing:.1em;text-transform:uppercase;font-size:9.5px}
+  details p{margin:5px 0 0;line-height:1.6;max-width:160ch}
+  details b{color:var(--ink-2);font-weight:500}
+  /* v34: the header carries a loading line while a tab's files are fetched, and a DEV banner when the
+     manifest says the data are development stand-ins */
+  .loadline{font-size:10px;letter-spacing:.08em;color:var(--muted);white-space:nowrap;min-height:14px}
+  .loadline.err{color:var(--drift)}
+  .devtag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#1a0d03;background:var(--burn);
+          border-radius:2px;padding:2px 7px;white-space:nowrap}
+  .arms button.wingsel{color:var(--wing)}
+</style>
+
+<div class="app">
+  <header>
+    <div>
+      <p class="eyebrow" id="eyebrow">&mdash;</p>
+      <h1 id="title">Orbit Mission Atlas</h1>
+      <div class="loadline" id="loadline">loading manifest…</div>
+    </div>
+    <div class="figs" id="figs"></div>
+    <div class="figs">
+      <span class="devtag" id="devtag" hidden></span>
+      <div class="fig clock"><b id="c-day">&mdash;</b><span>mission day</span></div>
+      <div class="fig utc"><b id="c-utc" style="font-size:15px">&mdash;</b><span id="c-sub">utc</span></div>
+    </div>
+  </header>
+
+  <nav class="arms" id="arms" aria-label="Mission architecture"></nav>
+
+  <main>
+    <aside class="rail" id="rail">
+      <figure class="inset">
+        <figcaption id="inset-cap">Encounter geometry</figcaption>
+        <svg id="enc" viewBox="0 0 280 200" preserveAspectRatio="xMidYMid meet" role="img"
+             aria-label="Relative geometry of the two satellites at the selected encounter"></svg>
+        <div class="note"><span id="enc-l">&mdash;</span><span id="enc-r">&mdash;</span></div>
+      </figure>
+      <section class="panel"><h2><span id="sel-title">Encounter</span><span id="sel-of"></span></h2>
+        <dl class="kv" id="sel-kv"></dl></section>
+      <div id="armpanel"></div>
+    </aside>
+
+    <section class="view">
+      <div class="globe"><canvas id="sky"></canvas></div>
+      <div class="ctlbar" id="controls"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="tlwrap">
+      <svg id="tl" viewBox="0 0 1400 132" preserveAspectRatio="xMidYMid meet" role="img"
+           aria-label="Mission timeline"></svg>
+      <div class="tltabs" id="tltabs"></div>
+    </div>
+    <details><summary>provenance</summary><p id="prov"></p></details>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el=function(id){return document.getElementById(id);};
+  var fmt=function(x,n){return Number(x).toFixed(n===undefined?2:n);};
+  var hm=function(s){s=Math.round(s);return s<3600?Math.round(s/60)+" min":(s/3600).toFixed(1)+" h";};
+  var km=function(x){return x<1?(x*1000).toFixed(0)+" m":x<100?x.toFixed(2)+" km":Math.round(x)+" km";};
+  var TAU=Math.PI*2, RE=6378.137, U=1000;
+  var wrap=function(x){return x-TAU*Math.floor(x/TAU);};          // into [0, 2pi)
+  /* Shortest signed arc. NOT ((x+3pi) % 2pi) - pi: the remainder operator keeps the sign of its
+     left operand, so that form silently returns the WRONG branch as soon as |x| > 3pi -- which is
+     every multi-revolution phase difference in this page, and was why bodies lurched at a
+     boundary and the clock looked like it skipped. */
+  var arc=function(x){return x-TAU*Math.round(x/TAU);};
+  /* v34: payloads are separate files listed in manifest.json and fetched when a tab is first
+     activated. load(id) keeps its v33 meaning -- "the payload with this id" -- so a gate can still
+     feed a payload by id: the store first (fetch or a gate's feed()), then an element of that id. */
+  var PAY={};
+  function feed(id,obj){PAY[id]=obj;}
+  function load(id){
+    if(PAY[id]!==undefined)return PAY[id];
+    var n=el(id); if(!n)return null;
+    var t=(n.textContent||"").trim();
+    if(!t||t==="null")return null;
+    try{return JSON.parse(t);}catch(e){return null;}
+  }
+  /* Four tabs from the manifest. DATA[k] is the tab's ARM payload (meta.kind survey / hybrid / fleet);
+     INSP[k] the SET of per-inspector tour payloads drawn on top of it (the fleet's own inspectors on
+     the fleet tabs, the co-orbit WING on the survey and drifter tabs); WING[k] the wing's fleet-level
+     events file (its meta feeds the "Co-orbit wing" panel). */
+  var MAN=null,TABS=[],TAB={},DATA={},INSP={},WING={},LOADED={},CAT=null,CUR=null;
+
+  /* ====================================================================================
+     ONE CLOCK.  T is mission days since the common epoch every arm's records are stamped
+     against.  It advances from the WALL clock, so a heavy frame costs picture and never
+     time, and changing the rate re-anchors without a jump.  Every single thing drawn --
+     the Earth's spin, the Sun, each inspector, each target, all 7852 catalogue satellites
+     -- is a pure function of T.  There is no second time source anywhere in this page.
+     ==================================================================================== */
+  var EPOCH="2026-03-25T21:25:17.146",EPOCH_MS=Date.parse(EPOCH+"Z");
+  var CLK={T:0,rate:3600,playing:true,t0:0,w0:0,lo:0,hi:1825};
+  /* STATE CARRIED ACROSS TABS (PH 2026-10-02): the clock (T, play, rate) lives in CLK; the platform selection is a
+     MODE ("" own platforms / "*" all platforms incl. the S1 arm) plus, when one was chosen by name, that platform;
+     the constellation layer and the timeline/coverage sub-tab are remembered here. Every control of a newly built
+     tab is rendered FROM these, so the selectors show the carried value. */
+  var SEL={mode:"",who:null}, SHOWCAT=false, SUBTAB="tl";
+  function now(){
+    return (window.performance&&window.performance.now)?window.performance.now():Date.now();
+  }
+  function anchor(T){CLK.T=T;CLK.t0=T;CLK.w0=now();}
+  function advance(){
+    if(!CLK.playing)return;
+    CLK.T=CLK.t0+(now()-CLK.w0)/1000*CLK.rate/86400;
+    if(CLK.T>CLK.hi||CLK.T<CLK.lo)anchor(CLK.lo);
+  }
+  function tOf(utc){return (Date.parse(String(utc).replace(" ","T")+"Z")-EPOCH_MS)/86400000;}
+  function utcAt(T){
+    var d=new Date(EPOCH_MS+T*86400000),p=function(x){return (x<10?"0":"")+x;};
+    return d.getUTCFullYear()+"-"+p(d.getUTCMonth()+1)+"-"+p(d.getUTCDate())+" "+
+           p(d.getUTCHours())+":"+p(d.getUTCMinutes());
+  }
+  /* Earth spin: ONE line through Orekit's prime-meridian direction, least-squares fitted
+     over the whole mission (catalogue_payload.py).  Continuous by construction -- there is
+     no per-encounter anchor left to re-base on, so no rotation is skipped or repeated.
+     Gate: meta.spin_gate_deg against Orekit, meta.spin_gate_events_deg against the angle
+     recorded at every flown encounter. The catalogue payload is fetched before any tab, and
+     setCat() takes the epoch, the spin line and the Sun table from it. */
+  var SPIN0=0,SPINR=TAU*1.00273781,SUNG=null,SUNSTEP=1.0;
+  function setCat(c){
+    CAT=c||null;
+    EPOCH=(CAT&&CAT.meta&&CAT.meta.epoch)||EPOCH; EPOCH_MS=Date.parse(EPOCH+"Z");
+    SPIN0=(CAT&&CAT.spin)?CAT.spin[0]:0; SPINR=(CAT&&CAT.spin)?CAT.spin[1]:TAU*1.00273781;
+    SUNG=(CAT&&CAT.sun)?CAT.sun:null; SUNSTEP=(CAT&&CAT.sun_step_d)||1.0;
+  }
+  /* one full turn of the Earth per second of real time -- past that the spin is aliasing, not
+     motion: at 60 Hz it is already 6 degrees a frame, and the surface strobes rather than turns */
+  var SPIN_CAP=86400/1.0027379, SPIN_HELD=false, SPIN_AT=0;
+  function sunAt(T,out){
+    if(!SUNG){out[0]=1;out[1]=0;out[2]=0;return out;}
+    var f=Math.max(0,Math.min(SUNG.length-1.0001,T/SUNSTEP)),i=Math.floor(f),u=f-i;
+    var a=SUNG[i],b=SUNG[i+1];
+    out[0]=a[0]+(b[0]-a[0])*u;out[1]=a[1]+(b[1]-a[1])*u;out[2]=a[2]+(b[2]-a[2])*u;
+    return out;
+  }
+
+  /* ====================================================================================
+     ONE DISPLAY FUNCTION.
+     A TRACK is the time-ordered list of flown states of one body: at each state, the six
+     osculating elements Orekit derived from it and that orbit's Keplerian period.
+     stateAt(track,T) is defined for every T and is continuous everywhere:
+        elements  linear between the two bracketing flown states, angles on the short arc
+        phase     the earlier state's true anomaly carried FORWARD at its own Keplerian
+                  rate and the later state's carried BACK at its own, blended -- exact at
+                  both flown states, continuous across every boundary, and still right for
+                  a track holding a single state.
+     Inspectors, targets and the catalogue all go through it, so no arm has a display path
+     of its own and there is nothing left to keep in step.
+     ==================================================================================== */
+  function track(states){                       // states: [{t, el:[6], per}] ascending in t
+    return {t:states.map(function(s){return s.t;}),
+            el:states.map(function(s){return s.el;}),
+            per:states.map(function(s){return s.per;}),
+            n:states.length, c:0};
+  }
+  function bracket(tr,T){
+    var t=tr.t,n=tr.n,c=tr.c;
+    if(c>=n)c=n-1;
+    while(c>0&&t[c]>T)c--;
+    while(c<n-1&&t[c+1]<=T)c++;
+    tr.c=c;return c;
+  }
+  function stateAt(tr,T,out){
+    var j=bracket(tr,T),n=tr.n;
+    var A=j, B=(T>=tr.t[j]&&j<n-1)?j+1:j;
+    var tA=tr.t[A],tB=tr.t[B];
+    var u=(B!==A&&tB>tA)?Math.max(0,Math.min(1,(T-tA)/(tB-tA))):0;
+    var eA=tr.el[A],eB=tr.el[B],o=out.el;
+    o[0]=eA[0]+(eB[0]-eA[0])*u;
+    o[2]=eA[2]+arc(eB[2]-eA[2])*u;                       // inclination
+    o[3]=eA[3]+arc(eB[3]-eA[3])*u;                       // node
+    /* Eccentricity and perigee argument are carried as the eccentricity VECTOR, e(cos w, sin w).
+       At e < 0.002 the perigee argument is not a real direction: between two osculating states a
+       second apart it can swing 100 degrees, and interpolating it on its own spins the true anomaly
+       the other way to compensate, which leaves the radius oscillating at kilometres a second. The
+       two components are small, well behaved, and reproduce e and w exactly at both ends. */
+    var ex=eA[1]*Math.cos(eA[4]),ey=eA[1]*Math.sin(eA[4]);
+    ex+=(eB[1]*Math.cos(eB[4])-ex)*u; ey+=(eB[1]*Math.sin(eB[4])-ey)*u;
+    o[1]=Math.sqrt(ex*ex+ey*ey); o[4]=Math.atan2(ey,ex);
+    /* The phase carried across an interval is the ARGUMENT OF LATITUDE, perigee argument plus
+       true anomaly -- never the true anomaly alone. Every orbit here has e < 0.002, so between two
+       osculating states the perigee argument can swing by radians while the body barely moves, and
+       the true anomaly swings back to cancel it. Blending the two separately puts that cancellation
+       into the phase rate and the body lurches at each boundary; their sum is the angle from the
+       ascending node and is well behaved. */
+    var LA=eA[4]+eA[5]+TAU*(T-tA)*86400/tr.per[A];
+    var LB=eB[4]+eB[5]+TAU*(T-tB)*86400/tr.per[B];
+    var dp=arc(LB-LA);
+    o[5]=LA+dp*u-o[4];
+    out.per=tr.per[A]+(tr.per[B]-tr.per[A])*u;
+    out.inside=(T>=tr.t[0]-1e-9&&T<=tr.t[n-1]+1e-9);
+    return out;
+  }
+
+  /* --- the ellipse, written straight into scene-space buffers, no per-frame allocation --- */
+  var RK=[0,0,0,0,0,0];                                       // Px,Py,Pz,Qx,Qy,Qz
+  function basis(e){
+    var i=e[2],O=e[3],w=e[4];
+    var cO=Math.cos(O),sO=Math.sin(O),ci=Math.cos(i),si=Math.sin(i),cw=Math.cos(w),sw=Math.sin(w);
+    RK[0]=cO*cw-sO*sw*ci; RK[1]=sO*cw+cO*sw*ci; RK[2]=sw*si;
+    RK[3]=-cO*sw-sO*cw*ci; RK[4]=-sO*sw+cO*cw*ci; RK[5]=cw*si;
+  }
+  function atNu(e,nu,arr,o){                                  // scene coords: (x, z, -y)/1000
+    var r=e[0]*(1-e[1]*e[1])/(1+e[1]*Math.cos(nu));
+    var x=r*Math.cos(nu),y=r*Math.sin(nu);
+    arr[o]  = (RK[0]*x+RK[3]*y)/U;
+    arr[o+1]= (RK[2]*x+RK[5]*y)/U;
+    arr[o+2]=-(RK[1]*x+RK[4]*y)/U;
+  }
+  function ringInto(e,n,arr,off){
+    basis(e);
+    for(var k=0;k<n;k++)atNu(e,e[5]+TAU*k/n,arr,off+k*3);
+  }
+  function segsInto(e,n,arr,off){                             // n segments = 2n vertices
+    basis(e);
+    for(var k=0;k<n;k++){
+      atNu(e,e[5]+TAU*k/n,arr,off+k*6);
+      atNu(e,e[5]+TAU*(k+1)/n,arr,off+k*6+3);
+    }
+  }
+  var TMP=[0,0,0];
+
+  /* ============================== the globe ============================== */
+  var SKY=null;
+  if(typeof THREE!=="undefined"){
+    var cv=el("sky");
+    var renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    var scene=new THREE.Scene();
+    var camera=new THREE.PerspectiveCamera(38,1.78,0.1,400);
+    /* Default view (PH 2026-09-30): the Earth's spin axis vertical and in the plane of the screen, i.e. the
+       camera in the equatorial plane (pitch 0); framing and follow turn the yaw only, never the pitch. The user
+       may still drag the pitch. */
+    var camR=24.0,camYaw=0.7,camPitch=0.0,follow=false,camTarget=null;
+    var ld=new THREE.TextureLoader();
+    var dayTex=ld.load("tex/day.jpg");
+    var nightTex=ld.load("tex/night.jpg");
+    dayTex.anisotropy=8;nightTex.anisotropy=4;
+    var earth=new THREE.Mesh(new THREE.SphereGeometry(RE/U,128,80),
+      new THREE.ShaderMaterial({
+        uniforms:{dayTex:{value:dayTex},nightTex:{value:nightTex},
+                  sunDir:{value:new THREE.Vector3(1,0,0)}},
+        vertexShader:["varying vec2 vUv;varying vec3 vN;",
+          "void main(){vUv=uv;vN=normalize(mat3(modelMatrix)*normal);",
+          "gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}"].join("\n"),
+        fragmentShader:["uniform sampler2D dayTex,nightTex;uniform vec3 sunDir;",
+          "varying vec2 vUv;varying vec3 vN;",
+          "void main(){float c=dot(normalize(vN),normalize(sunDir));",
+          "float t=smoothstep(-0.12,0.20,c);",
+          "vec3 d=texture2D(dayTex,vUv).rgb;",
+          "vec3 n=texture2D(nightTex,vUv).rgb*1.3+vec3(0.012,0.020,0.038);",
+          "vec3 col=mix(n,d,t);",
+          "float rim=pow(1.0-abs(c),3.0)*0.20*smoothstep(-0.45,0.30,c);",
+          "col+=vec3(0.35,0.55,0.95)*rim;",
+          "gl_FragColor=vec4(col,1.0);}"].join("\n")}));
+    scene.add(earth);
+    scene.add(new THREE.Mesh(new THREE.SphereGeometry(RE/U*1.03,64,48),
+      new THREE.MeshBasicMaterial({color:0x4d86d6,transparent:true,opacity:0.08,
+        side:THREE.BackSide,depthWrite:false})));
+    (function(){
+      var n=1400,p=new Float32Array(n*3);
+      for(var i=0;i<n;i++){
+        var u=Math.random()*2-1,th=Math.random()*6.2832,q=Math.sqrt(1-u*u),r=120+Math.random()*90;
+        p[i*3]=r*q*Math.cos(th);p[i*3+1]=r*u;p[i*3+2]=r*q*Math.sin(th);
+      }
+      var g=new THREE.BufferGeometry();
+      g.setAttribute("position",new THREE.BufferAttribute(p,3));
+      scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0x8ea3c4,size:0.42,
+        sizeAttenuation:true,transparent:true,opacity:0.65})));
+    })();
+    var layer=new THREE.Group();scene.add(layer);
+    var SUNV=[1,0,0];
+    SKY={
+      layer:layer, framedOnce:false, followBody:null,
+      clear:function(){
+        while(layer.children.length){
+          var o=layer.children.pop();
+          if(o.geometry)o.geometry.dispose();
+          if(o.material&&o.material.dispose)o.material.dispose();
+          layer.remove(o);
+        }
+      },
+      buf:function(kind,n,mat){                    // n = vertex count
+        var g=new THREE.BufferGeometry();
+        g.setAttribute("position",new THREE.BufferAttribute(new Float32Array(n*3),3));
+        var o=(kind==="loop")?new THREE.LineLoop(g,mat)
+             :(kind==="seg")?new THREE.LineSegments(g,mat)
+             :(kind==="line")?new THREE.Line(g,mat):new THREE.Points(g,mat);
+        o.frustumCulled=false;layer.add(o);return o;
+      },
+      add:function(o){layer.add(o);return o;},
+      /* Past SPIN_CAP the spin is aliasing rather than motion -- the globe reads as stuttering,
+         often backwards. Hold it at the orientation it had when the rate was raised, and say so in
+         the header. The Sun keeps its real direction, so the terminator still moves; the Earth's
+         own rotation is the only thing frozen. */
+      orient:function(T){
+        var held=(CLK.rate>SPIN_CAP);
+        if(held&&!SPIN_HELD){SPIN_HELD=true;SPIN_AT=T;}
+        else if(!held&&SPIN_HELD)SPIN_HELD=false;
+        earth.rotation.y=wrap(SPIN0+SPINR*(held?SPIN_AT:T));
+        sunAt(T,SUNV);
+        earth.material.uniforms.sunDir.value.set(SUNV[0],SUNV[2],-SUNV[1]).normalize();
+      },
+      frame:function(v,r){camTarget=v.clone().normalize();if(r)camR=r;},
+      setFollow:function(v){follow=v;},
+      getFollow:function(){return follow;},
+      getDist:function(){return camR;},           // camera distance: what "fixed on-screen length" needs
+      camPos:function(){return camera.position;},
+      /* scene units per screen pixel for a thing at distance d from the camera (vertical FOV 38 deg
+         over the canvas height): what lets the thrust arrow keep a width in PIXELS at any zoom */
+      pxWorld:function(d){return 2*d*Math.tan((camera.fov||38)*Math.PI/360)/(lh||520);}
+    };
+    var lw=0,lh=0,drag=false,px=0,py=0,lastT=0;
+    function resize(){
+      var w=cv.clientWidth,h=cv.clientHeight;
+      if(!w||!h||(w===lw&&h===lh))return;
+      lw=w;lh=h;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize",resize);
+    cv.addEventListener("pointerdown",function(e){drag=true;px=e.clientX;py=e.clientY;
+      cv.setPointerCapture(e.pointerId);});
+    cv.addEventListener("pointerup",function(){drag=false;});
+    cv.addEventListener("pointermove",function(e){
+      if(!drag)return;
+      camYaw-=(e.clientX-px)*0.006;
+      camPitch=Math.max(-1.35,Math.min(1.35,camPitch+(e.clientY-py)*0.005));
+      px=e.clientX;py=e.clientY;camTarget=null;});
+    cv.addEventListener("wheel",function(e){e.preventDefault();
+      camR=Math.max(8,Math.min(60,camR*(1+Math.sign(e.deltaY)*0.08)));},{passive:false});
+    (function tick(ts){
+      var dt=lastT?Math.min(0.05,(ts-lastT)/1000):0;lastT=ts;
+      advance();
+      if(CUR)CUR.render(CLK.T);
+      if(!drag){
+        var aim=(follow&&SKY.followBody)?SKY.followBody:camTarget;
+        if(aim){
+          var a=aim.clone().normalize();
+          var d=arc(Math.atan2(a.x,a.z)-camYaw);
+          var k=Math.min(1,dt*(follow?3.0:2.6));
+          camYaw+=d*k;
+          if(!follow&&Math.abs(d)<0.002)camTarget=null;
+        }
+      }
+      resize();
+      var cp=Math.cos(camPitch);
+      camera.position.set(camR*cp*Math.sin(camYaw),camR*Math.sin(camPitch),camR*cp*Math.cos(camYaw));
+      camera.lookAt(0,0,0);
+      renderer.render(scene,camera);
+      requestAnimationFrame(tick);
+    })(0);
+  }
+  /* ============================== one arm ============================== */
+  /* buildArm(D, X): D is the tab's ARM payload; X = {tab, who, insp:[tour payloads], wing:{meta, spec}}.
+     BODIES are everything drawn as a satellite: the arm's own fliers (drifters, or the fleet's
+     inspectors from the fleet-level events), plus every inspector that has a per-inspector TOUR
+     payload -- drawn from ITS recorded rows, placed at target + RECORDED offset through every
+     hold window, its thrust arrow shown inside each of its recorded arcs (the v33 flown-inspector
+     treatment, now for every inspector at once). The FOCUS body (flier selector) owns the Vehicle
+     panel, the RTN inset, the target ring, the future path and the events strip; every other body
+     is drawn as a body + arrows only. Nothing here has a second clock or a second display path. */
+  var COL={drift:[1.0,0.54,0.24],fleet:[1.0,0.54,0.24],wing:[0.75,0.52,0.99]};
+  var BURNCOL=[1.0,0.23,0.19];      // a platform marker turns RED while the clock is inside one of its recorded arcs (PH 2026-09-30)
+  function buildArm(D,X){
+    X=X||{};
+    var EVa=D.events,HOPS=D.hops||[],M=D.meta,KIND=M.kind||"hybrid",LED=M.ledger;
+    var INSPP=X.insp||[],WSPEC=X.wing||null,WINGM=(WSPEC&&WSPEC.meta)||null,WHO=X.who||"",TABID=X.tab||KIND;
+    if(KIND==="tour")throw new Error("a lone tour payload is not a tab in v34: list it under a tab's inspectors");
+    if(KIND==="fleet")EVa.forEach(function(e){   // compact events: the target is the body itself
+      if(!e.rt){e.rt=e.ri;e.el_t=e.el_i;e.per_t=e.per_i;e.vi=e.vi||[0,0,0];e.vt=e.vi;}});
+    /* per-arm lookups below are object literals, so EVERY branch is evaluated before one is
+       chosen: give the fields each branch reads a default, or the other arms throw. */
+    M.cov=M.cov||{}; M.cov_curve=M.cov_curve||null; M.drifters=M.drifters||[];
+    M.miss_med=M.miss_med===undefined?"—":M.miss_med;
+    M.miss_max=M.miss_max===undefined?"—":M.miss_max;
+    M.n_sats=M.n_sats||0; M.n_serves=M.n_serves||0; M.n_drifters=M.n_drifters||0;
+    M.max_dv_ms=M.max_dv_ms||0; M.max_t_yr=M.max_t_yr||0; M.max_t_d=M.max_t_d||0;
+    M.n_targets=M.n_targets||EVa.length; M.n_shown=M.n_shown||EVa.length; M.n_served=M.n_served||EVa.length;
+    M.n_encounters=M.n_encounters||0; M.horizon_d=M.horizon_d||1825; M.aim=M.aim||0.3;
+    M.dv_total_ms=M.dv_total_ms||0; M.groups=M.groups||{}; M.n_dead_end=M.n_dead_end||0;
+    M.campaign_d=M.campaign_d||0; M.n_flown=M.n_flown||0; M.n_stuck=M.n_stuck||0;
+    M.terminal=M.terminal||null; M.unreachable=M.unreachable||[]; M.n_unreachable=M.n_unreachable||0;
+    M.sized_max_dv_ms=M.sized_max_dv_ms||0; M.sized_campaign_d=M.sized_campaign_d||0;
+    M.sized_dv_total_ms=M.sized_dv_total_ms||0; M.last_arrival_d=M.last_arrival_d||0;
+    M.worst_leg_ms=M.worst_leg_ms||0; M.mode=M.mode||"";
+    if(M.keepout_m===undefined)M.keepout_m=null;
+    LED=LED||{dv_nudge_ms:0,dv_hop_ms:0,dv_drag_ms_EST:0,dv_reserve_ms:0,dv_total_ms:0,dv_budget_ms:0,
+              t_used_d:1,t_cap_d:0,n_nudges:0,n_hops:0,max_nudge_ms:0};
+    var self={meta:M,tab:TABID,who:WHO};
+    /* An event's place on the clock is taken from its recorded UTC stamp, not from the mission
+       day beside it: the day is rounded to 1e-4 (8.6 s), which is coarse enough that two
+       encounters of the same drifter can land on the SAME instant -- and two flown states at one
+       instant have no ordering, so the track brackets the wrong one and the body jumps tens of km.
+       The UTC string is the same record at second resolution and separates all of them. */
+    var timesOf=function(EVx){return EVx.map(function(e){var v=tOf(e.utc);return isFinite(v)?v:e.t;});};
+    var TTa=timesOf(EVa);
+    /* the fitted Earth-spin line against the prime-meridian angle Orekit recorded at every flown
+       state of THIS arm -- measured here, on the page's own data, not quoted from a build-time gate */
+    var SPINERR=EVa.reduce(function(a,e,i){
+      return (typeof e.gmst==="number")?Math.max(a,Math.abs(arc(SPIN0+SPINR*TTa[i]-e.gmst))):a;},0)*180/Math.PI;
+    function shortName(n){return String(n).replace("place_","").replace("loiter_full7852_","");}
+    function nameOf(w){return w?shortName(w):(M.seed_tag||(KIND==="hybrid"?"S2 platform":"S3 platform"));}
+
+    /* --- bodies --- */
+    var byId={};INSPP.forEach(function(P){byId[P.meta.inspector]=P;});
+    var people=[];
+    EVa.forEach(function(e){var w=e.who||"";if(people.indexOf(w)<0)people.push(w);});
+    people.sort();
+    function armStates(w){var st=[];EVa.forEach(function(e,i){if((e.who||"")===w)st.push({t:TTa[i],el:e.el_i,per:e.per_i});});return st;}
+    function tourStates(P){
+      /* the flight's RECORDED rows between the holds (every few hours, plus the first row inside
+         each thrust arc); a hold's own state (the event) is already in st */
+      var TTp=timesOf(P.events),st=P.events.map(function(e,i){return {t:TTp[i],el:e.el_i,per:e.per_i};}),ne=st.length;
+      (P.track||[]).forEach(function(x){
+        for(var q=0;q<ne;q++)if(Math.abs(st[q].t-x.t)<1e-6)return;
+        st.push({t:x.t,el:x.el,per:x.per});});
+      st.sort(function(a,b){return a.t-b.t;});
+      return {st:st,TT:TTp};
+    }
+    function mkBody(w,P,cls,st,TTp){
+      var b={who:w,cls:cls,P:P||null,rec:!!P,tr:track(st),TT:TTp||null,EV:P?P.events:null,
+             BURNS:[],BC:0,BCUM:null,BDV:null,SI:{el:[0,0,0,0,0,0],per:0,inside:false},SC:{el:[0,0,0,0,0,0],per:0,inside:false},
+             pos:[0,0,0],PT:[0,0,0],RL:[0,0,0],TRI:[0,0,0,0,0,0,0,0,0],CTXT:null,ctxFor:-1,relC:0,norad:null,
+             mode:"off",key:-1,inside:false,bel:null,arrow:null};
+      /* burn arcs.  tour: [t0, t1, dR, dT, dN, dv, mass, leg, kind] with the direction as recorded in the
+         chaser's RTN frame -- rotated into the inertial frame at the displayed state every frame, because a
+         direction held fixed in RTN turns with the orbit.  drifter: [t0, t1, sign, dv, mass, index], sign
+         +/-1 along the instantaneous velocity (the only direction the two-tangential-arc solver commands). */
+      if(P)(P.burns||[]).forEach(function(x){b.BURNS.push({t0:x[0],t1:x[1],d:[x[2],x[3],x[4]],dv:x[5],m:x[6],i:x[7],k:x[8],hop:false});});
+      else if(cls==="drift"&&KIND==="hybrid"){
+        (D.burns||[]).forEach(function(x){b.BURNS.push({t0:x[0],t1:x[1],s:x[2],dv:x[3],m:x[4],i:x[5],hop:false});});
+        (D.hop_burns||[]).forEach(function(x){b.BURNS.push({t0:x[0],t1:x[1],s:x[2],dv:x[3],m:x[4],i:x[5],hop:true});});
+      }
+      if(b.BURNS.length){
+        b.BURNS.sort(function(p,q){return p.t0-q.t0;});
+        b.BCUM=new Float64Array(b.BURNS.length+1);b.BDV=new Float64Array(b.BURNS.length+1);
+        b.BURNS.forEach(function(x,q){b.BCUM[q+1]=b.BCUM[q]+(x.t1-x.t0)*86400;b.BDV[q+1]=b.BDV[q]+x.dv;});
+      }
+      return b;
+    }
+    var BODIES=people.map(function(w){
+      var P=(KIND==="fleet")?(byId[w]||null):null;
+      if(P){var ts=tourStates(P);return mkBody(w,P,"fleet",ts.st,ts.TT);}
+      return mkBody(w,null,KIND==="fleet"?"fleet":"drift",armStates(w),null);});
+    var UNMATCHED=[];
+    INSPP.forEach(function(P){
+      var id=P.meta.inspector;
+      if(KIND==="fleet"){if(people.indexOf(id)>=0)return;UNMATCHED.push(id);}
+      var ts=tourStates(P);BODIES.push(mkBody(id,P,KIND==="fleet"?"fleet":"wing",ts.st,ts.TT));});
+    /* SINGLE-TARGET platforms (PH 2026-10-02): a platform that flew 0 legs has no tour payload and ONE event in the
+       fleet-level file (its one target, at t = 0). It is listed in the selector ("1 target, no transfer flown") and
+       DRAWN every frame at the catalogue fit of that target -- the six-number fit the constellation layer uses --
+       the sized hold (the event's miss, 150 m) behind it along-track; labelled "catalogue state", never a track.
+       On a fleet tab these are the arm's own payload-less one-event platforms; on a survey / drifter tab they come
+       from the S1 arm's fleet-level file. A multi-serve platform WITHOUT a payload is reported, not drawn from it. */
+    var UNLISTED_WING=[];
+    function catOfEvent(ev){return {n:ev.n,trail_m:Math.round((ev.miss||0.15)*1000)};}
+    BODIES.forEach(function(b){if(KIND==="fleet"&&!b.P){var evs=EVa.filter(function(e){return (e.who||"")===b.who;});if(evs.length===1)b.cat=catOfEvent(evs[0]);}});
+    if(WSPEC&&WSPEC.events&&WSPEC.events.length){
+      var wev={};WSPEC.events.forEach(function(e){var w=e.who||"";if(!w||byId[w])return;(wev[w]=wev[w]||[]).push(e);});
+      Object.keys(wev).sort().forEach(function(w){var evs=wev[w];
+        if(evs.length===1){var ev=evs[0],b=mkBody(w,null,"wing",[{t:(isFinite(tOf(ev.utc))?tOf(ev.utc):ev.t),el:ev.el_i,per:ev.per_i}],null);b.cat=catOfEvent(ev);BODIES.push(b);}
+        else UNLISTED_WING.push(w+" ("+evs.length+" serves in the fleet-level file, no tour payload)");});
+    }
+    var nB=BODIES.length,byWho={};BODIES.forEach(function(b,q){byWho[b.who]=q;});
+    var REC=BODIES.filter(function(b){return b.rec;}),NOREC=BODIES.filter(function(b){return b.cls==="fleet"&&!b.rec;});
+    var WINGB=BODIES.filter(function(b){return b.cls==="wing";}),WINGREC=WINGB.filter(function(b){return b.rec;}),WINGCAT=WINGB.filter(function(b){return !!b.cat;});
+    var FLEETCAT=NOREC.filter(function(b){return !!b.cat;});
+    function catOf(w){var b=BODIES[byWho[w]];return (b&&b.cat)||null;}
+    /* --- focus --- */
+    var FB=null;
+    if(WHO&&byWho[WHO]!==undefined)FB=BODIES[byWho[WHO]];
+    else if(KIND==="hybrid")FB=BODIES[0];                 // the one drifter
+    var MODE=(FB&&FB.P)?"tour":KIND;
+    var Dt=MODE==="tour"?FB.P:D, Mt=MODE==="tour"?FB.P.meta:M;
+    if(MODE==="tour"){Mt.legs=Mt.legs||[];Mt.n_legs=Mt.n_legs||0;Mt.n_legs_sized=Mt.n_legs_sized||0;
+      if(Mt.keepout_m===undefined)Mt.keepout_m=null;}
+    var KO=(Mt.keepout_m!==undefined&&Mt.keepout_m!==null)?Mt.keepout_m:null;   // keep-out line: from meta only
+    /* a STUCK inspector: the flight's own meta.stuck record when the payload carries one, else the meta's own
+       counts (legs flown < legs sized -- each unflown leg is one unserved target); never hidden */
+    function stuckOf(P){
+      if(!P)return null;var m=P.meta,s=m.stuck||null;
+      if(!s&&typeof m.n_legs==="number"&&typeof m.n_legs_sized==="number"&&m.n_legs<m.n_legs_sized)
+        s={legs_flown:m.n_legs,legs_sized:m.n_legs_sized,derived:true};
+      if(!s)return null;
+      var flown=s.legs_flown!==undefined?s.legs_flown:m.n_legs,sized=s.legs_sized!==undefined?s.legs_sized:m.n_legs_sized;
+      var un=(s.unserved_norads&&s.unserved_norads.length)||s.unserved||(sized-flown);
+      return {flown:flown,sized:sized,unserved:un,reason:s.reason||null,norads:s.unserved_norads||null,
+              line:"STUCK at leg "+(typeof s.stopped_leg==="number"?s.stopped_leg:flown+1)+" of "+sized+" · "+un+" target"+(un===1?"":"s")+" unserved"+
+                   (typeof s.stopped_leg==="string"?" · "+s.stopped_leg:"")+(s.handoff_sep_m!==undefined?" · hand-off separation "+Number(s.handoff_sep_m).toFixed(0)+" m":"")+
+                   (s.reason?" · "+s.reason:"")+(s.derived?" (from the meta's leg counts; no meta.stuck record)":"")};
+    }
+    var STUCK=(MODE==="tour")?stuckOf(FB.P):null;
+    /* "stuck" / "unserved" are written on the page ONLY when something is: the fleet-level count, a fleet-level stuck
+       record, or any drawn platform's own record / leg counts (PH 2026-10-02) -- data-driven, never typed */
+    var ANYSTUCK=!!(M.n_stuck>0||(M.stuck&&Object.keys(M.stuck).length)||BODIES.some(function(b){return !!stuckOf(b.P);}));
+    /* the event list the timeline, the rail and Prev/Next walk: the focus's recorded holds when a
+       flown inspector is selected, the arm's own events otherwise (filtered to one flier if chosen) */
+    var EV=MODE==="tour"?FB.EV:EVa, TT=MODE==="tour"?FB.TT:TTa;
+    var LIST=EV.map(function(_,i){return i;}).sort(function(a,b){return TT[a]-TT[b];});
+    if(MODE!=="tour"&&WHO&&people.indexOf(WHO)>=0){
+      var L2=LIST.filter(function(i){return (EV[i].who||"")===WHO;}); if(L2.length)LIST=L2;}
+    var TTERR=EV.reduce(function(a,e,i){return Math.max(a,Math.abs(TT[i]-e.t));},0);
+    var idx=-1, lastPaint=0, TLX=null, TLINV=null, tab=(SUBTAB==="cov"&&MODE==="survey"&&M.cov_curve)?"cov":"tl", subHeld=null;
+    var gapMed=(function(){
+      var g=[];for(var i=1;i<LIST.length;i++)g.push(TT[LIST[i]]-TT[LIST[i-1]]);
+      g.sort(function(a,b){return a-b;});
+      return g.length?g[g.length>>1]:1;
+    })();
+    var CUM=null,FIN=null,FINAL=0,maxBar=0;
+    if(MODE==="hybrid"){
+      CUM=[];var arcs=0,prop=0;
+      EV.forEach(function(e,i){
+        arcs+=e.dv;prop+=e.prop;
+        var h=0;HOPS.forEach(function(x){if(x.t<=e.t)h+=x.dv;});
+        CUM.push({arcs:arcs,hops:h,drag:LED.dv_drag_ms_EST*(e.t/LED.t_used_d),t:e.t,n:i+1,prop:prop});
+      });
+      FIN=CUM[CUM.length-1];FINAL=FIN.arcs+FIN.hops+FIN.drag;
+      maxBar=Math.max(LED.dv_nudge_ms,LED.dv_hop_ms,LED.dv_drag_ms_EST,LED.dv_reserve_ms);
+    }
+    /* the focus's burns drive the engine line, the instruments, the event strip and the timeline marks;
+       every body's own burns drive its arrow.  A burn stays on screen for HOLD_S of REAL time after
+       its arc ends -- the trail rule again -- so a 20-minute arc is still seen at a day per second. */
+    var BURNS=FB?FB.BURNS:[],BSTAT=Mt.burn_stats||null,HOLD_S=0.35,BKINDS=Mt.burn_kinds||[];
+    var CTX=!!((MODE==="tour"&&Dt.tgt&&Dt.tgt.length)||(MODE==="hybrid"&&CAT&&CAT.sats&&CAT.sats.length));
+    function burnAt(b,T){                  // the arc of body b displayed at T (its own span + the real-time hold), or -1
+      var n=b.BURNS.length; if(!n)return -1;
+      var c=b.BC; if(c>=n)c=n-1;
+      while(c>0&&b.BURNS[c].t0>T)c--;
+      while(c<n-1&&b.BURNS[c+1].t0<=T)c++;
+      b.BC=c;
+      var x=b.BURNS[c];
+      if(T<x.t0)return -1;
+      return (T<=x.t1+HOLD_S*CLK.rate/86400)?c:-1;
+    }
+    function burnedBy(T){                  // seconds the focus's engine has been on up to T (arcs never overlap)
+      if(!FB||!FB.BURNS.length)return 0;
+      burnAt(FB,T);var x=FB.BURNS[FB.BC];
+      return T<x.t0?FB.BCUM[FB.BC]:FB.BCUM[FB.BC]+Math.max(0,Math.min(T,x.t1)-x.t0)*86400;
+    }
+    var VD=[0,0,0];
+    function velDir(e,out){                // unit inertial velocity direction at a displayed state, scene axes
+      basis(e);
+      var nu=e[5],vx=-Math.sin(nu),vy=e[1]+Math.cos(nu);
+      var Xv=RK[0]*vx+RK[3]*vy,Yv=RK[1]*vx+RK[4]*vy,Zv=RK[2]*vx+RK[5]*vy,n=Math.hypot(Xv,Yv,Zv)||1;
+      out[0]=Xv/n;out[1]=Zv/n;out[2]=-Yv/n;return out;
+    }
+
+    /* ---------------- chrome ---------------- */
+    /* Header figures are computed from the payload, never typed: the fleet's MAX dv / MAX time are
+       the worst inspector's flown totals, the drifter's are its own ledger. */
+    var FLOWN=(KIND==="fleet"&&M.mode==="flown");
+    var focusNote=(MODE==="tour")?" · platform "+FB.who+(FB.cls==="wing"?" (S1 arm)":"")+" from its recorded ephemeris + thrust arcs":"";
+    var HEAD={
+      hybrid:{eye:"1 S2 platform · routed fly-by · flown"+
+                  (M.caps_lifted?" · CAPS LIFTED":"")+(WINGB.length?" · S1 arm "+WINGB.length+" platform"+(WINGB.length>1?"s":"")+" · "+WINGREC.length+" recorded track"+(WINGREC.length===1?"":"s")+" drawn":"")+focusNote,
+        title:"S2 fly-by",
+        figs:function(){return [[M.n_served+"/"+M.n_targets,"targets served"],
+          [fmt(LED.dv_total_ms,0)+"/"+fmt(LED.dv_budget_ms,0),"m/s incl. reserve"],
+          [fmt(LED.t_used_d,1)+"/"+fmt(LED.t_cap_d,0),"days"],
+          [M.miss_max+" km","worst pass"]];}},
+      survey:{eye:M.n_drifters+" S3 platforms · passive fly-by · flown"+(WINGB.length?" · S1 arm "+WINGB.length+" platform"+(WINGB.length>1?"s":"")+" · "+WINGREC.length+" recorded track"+(WINGREC.length===1?"":"s")+" drawn":"")+focusNote,
+        title:"Hybrid fleet",
+        figs:function(){return [[M.n_targets,"targets"],["0","m/s"],
+          [M.miss_med+" km","median best"],[(M.n_encounters/1000).toFixed(0)+"k","encounters"]];}},
+      fleet:{eye:M.n_sats+" S1 platforms · co-orbit · "+(FLOWN?"flown "+M.n_flown+"/"+M.n_sats+
+                  (ANYSTUCK?" · "+M.n_stuck+" stuck":""):"SIZED, not flown")+" · "+REC.length+" recorded track"+(REC.length===1?"":"s")+" drawn"+focusNote,
+        title:"S1 co-orbit fleet",
+        figs:function(){return FLOWN?[[M.n_sats,"S1 platforms"],[M.n_serves,"served"],
+          [fmt(M.max_dv_ms,1),"m/s MAX platform"],[fmt(M.max_t_d,1),"days MAX platform"]]
+          :[[M.n_sats,"S1 platforms"],[M.n_serves,"serves"],[Math.round(M.max_dv_ms),"m/s worst"],
+          [fmt(M.max_t_yr,2),"yr campaign"],['<span style="color:var(--burn)">'+M.n_dead_end+'</span>',"dead-ended"]];}}
+    }[KIND];
+    el("eyebrow").textContent=HEAD.eye;
+    el("title").textContent=HEAD.title;
+    el("figs").innerHTML=HEAD.figs().map(function(f){
+      return '<div class="fig"><b>'+f[0]+'</b><span>'+f[1]+'</span></div>';}).join("");
+    el("sel-title").textContent=MODE==="fleet"?(FLOWN?"Serve":"Sized serve"):MODE==="tour"?"Leg":"Encounter";
+
+    /* platform selector: the arm's own fliers first, then the S1 arm (co-orbit wing) under a separator */
+    var WHO_SEL="";
+    if(nB>1||WINGB.length){
+      var opts=['<option value=""'+(WHO===""?" selected":"")+'>'+(KIND==="fleet"?"all "+people.length+" S1 platforms":KIND==="survey"?"all "+people.length+" S3 platforms":nameOf("")+" (S2 platform)")+'</option>'];
+      if(KIND!=="hybrid")people.forEach(function(w){opts.push('<option value="'+w+'"'+(w===WHO?" selected":"")+'>'+nameOf(w)+
+        (KIND==="fleet"?(byId[w]?" · recorded track"+(stuckOf(byId[w])?" · STUCK":""):(catOf(w)?" · 1 target, no transfer flown":" · catalogue states")):"")+'</option>');});
+      UNMATCHED.forEach(function(w){opts.push('<option value="'+w+'"'+(w===WHO?" selected":"")+'>'+w+' · recorded track (not in the fleet file)</option>');});
+      if(WINGB.length){opts.push('<option value="*"'+(WHO==="*"?" selected":"")+'>all platforms · '+people.length+' + S1 arm '+WINGB.length+'</option>');
+        opts.push('<option disabled>── S1 arm ──</option>');
+        WINGB.forEach(function(b){opts.push('<option value="'+b.who+'"'+(b.who===WHO?" selected":"")+'>'+b.who+(b.cat?' · S1 arm, 1 target, no transfer flown':' · S1 arm, recorded track'+(stuckOf(b.P)?' · STUCK':''))+'</option>');});}
+      WHO_SEL='<label class="sel">platform<select id="sel-who" aria-label="Show one platform">'+opts.join("")+'</select></label>';
+    }
+    el("controls").innerHTML=
+      '<button class="ctl" id="b-play" aria-pressed="'+String(CLK.playing)+'">'+(CLK.playing?"Pause":"Play")+'</button>'+
+      '<label class="sel">rate<select id="sel-rate" aria-label="Mission time per second of real time">'+
+      [[1,"real time"],[60,"1 min/s"],[600,"10 min/s"],[3600,"1 h/s"],[21600,"6 h/s"],[86400,"1 day/s"],[604800,"1 week/s"]].map(function(o){
+        return '<option value="'+o[0]+'"'+(CLK.rate===o[0]?" selected":"")+'>'+o[1]+'</option>';}).join("")+'</select></label>'+
+      '<button class="ctl" id="b-prev">Prev</button><button class="ctl" id="b-next">Next</button>'+
+      (CTX?'<button class="ctl" id="b-evp" title="previous event (←)">‹ event</button><button class="ctl" id="b-evn" title="next event (→)">event ›</button>':"")+
+      WHO_SEL+
+      (CAT?'<button class="ctl" id="b-cat" aria-pressed="'+String(SHOWCAT)+'">Constellation</button>':"")+
+      '<button class="ctl" id="b-follow" aria-pressed="'+String(!!(SKY&&SKY.getFollow()))+'">Follow</button>'+
+      '<button class="ctl" id="b-centre">Recentre</button>'+
+      '<span class="spacer"></span>'+
+      '<span class="key"><i style="background:var(--drift)"></i>platform'+
+      (WINGB.length?'<i style="background:var(--wing)"></i>S1 arm':"")+
+      '<i style="background:var(--target)"></i>target'+
+      (CTX?'<i style="background:var(--target);height:1px"></i>target orbit<i style="background:var(--drift);height:1px;opacity:.7"></i>path to target':"")+
+      (BODIES.some(function(b){return b.BURNS.length;})?'<i style="background:#ff3b30"></i>orbit line red = burning':"")+
+      (CAT?'<i style="background:#4d6690"></i>awaiting<i style="background:#ff9e42"></i>inspected':"")+
+      '</span>';
+
+    /* ---------------- scene objects ---------------- */
+    var SEG=nB>24?24:64, SEGSEL=72, TRAIL=40;
+    var ringsAll,ringSel,mIns,trailIns,ringTgt,mTgt,trailTgt,flash,catPts;
+    var ringCtx=null,mCtx=null,pathAhead=null,PATHN=3000;
+    var MARK=0.21;                               // the body marker's resting size
+    var CATN=null,CATR0=null,CATRD=null,CATU0=null,CATUD=null;
+    /* CONTEXT for a burn (drifter + flown inspector): the orbit of the target being flown to, the
+       inspector's own instantaneous orbit (ringSel, below), and the flown path of the current leg.
+       Which body is "the target" and where its states come from:
+         tour     the leg's target, from ITS recorded ephemeris rows (payload D.tgt, one track per leg:
+                  the seed state at departure, the same stride as the inspector, the row at the hold)
+         hybrid   the NEXT pass's target; the drifter payload has no target rows away from the pass,
+                  so between passes the ring is the catalogue layer's fitted mean orbit of that
+                  satellite (six numbers, gated against ref-SGP4: 58.6 km median at day 1825) and the
+                  FLOWN state at the pass takes over inside the encounter window as before.
+       The leg path is sampled through the page's own stateAt over the leg's span: the part already
+       flown solid, the part still to come as every-other-segment dashes. */
+    if(SKY){
+      SKY.clear();
+      /* No thrust arrow (PH 2026-09-30): the body flies its recorded track through every manoeuvre and its
+         marker is lit RED while the clock is inside a recorded arc. */
+      if(CTX){
+        ringCtx=SKY.buf("loop",SEGSEL,new THREE.LineBasicMaterial({color:0x53d3ff,transparent:true,opacity:0.7}));
+        ringCtx.name="ringCtx";ringCtx.visible=false;ringCtx.norad=null;
+        mCtx=SKY.add(new THREE.Mesh(new THREE.SphereGeometry(0.06,12,10),
+          new THREE.MeshBasicMaterial({color:0x53d3ff,transparent:true,opacity:0.8})));
+        mCtx.name="mCtx";mCtx.visible=false;
+        pathAhead=SKY.buf("line",PATHN,new THREE.LineBasicMaterial({color:0xff8a3d,transparent:true,opacity:0.6}));
+        pathAhead.name="pathAhead";pathAhead.visible=false;
+      }
+      /* every body's ring and marker in one buffer each, coloured per body class (drift / fleet
+         orange, wing violet) through a vertex-colour attribute written once here */
+      ringsAll=SKY.buf("seg",nB*SEG*2,new THREE.LineBasicMaterial({vertexColors:true,
+        transparent:true,opacity:nB>24?0.075:0.20}));ringsAll.name="rings";
+      var rc=new Float32Array(nB*SEG*2*3);
+      BODIES.forEach(function(b,q){var c=COL[b.cls];for(var v=0;v<SEG*2;v++){rc[(q*SEG*2+v)*3]=c[0];rc[(q*SEG*2+v)*3+1]=c[1];rc[(q*SEG*2+v)*3+2]=c[2];}});
+      ringsAll.geometry.setAttribute("color",new THREE.BufferAttribute(rc,3));
+      ringSel=SKY.buf("loop",SEGSEL,new THREE.LineBasicMaterial({color:0xff8a3d,transparent:true,
+        opacity:0.55}));ringSel.name="ringSel";
+      trailIns=SKY.buf("line",TRAIL,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,
+        opacity:0.95}));
+      trailIns.geometry.setAttribute("color",new THREE.BufferAttribute(new Float32Array(TRAIL*3),3));
+      mIns=SKY.buf("pt",nB,new THREE.PointsMaterial({vertexColors:true,size:0.21,
+        sizeAttenuation:true,transparent:true,opacity:0.95}));
+      var mc=new Float32Array(nB*3);
+      BODIES.forEach(function(b,q){var c=COL[b.cls];mc[q*3]=c[0];mc[q*3+1]=c[1];mc[q*3+2]=c[2];});
+      mIns.geometry.setAttribute("color",new THREE.BufferAttribute(mc,3));
+      mIns.name="bodies";
+      ringTgt=SKY.buf("loop",SEGSEL,new THREE.LineBasicMaterial({color:0x53d3ff,transparent:true,
+        opacity:0.45}));
+      trailTgt=SKY.buf("line",TRAIL,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,
+        opacity:0.95}));
+      trailTgt.geometry.setAttribute("color",new THREE.BufferAttribute(new Float32Array(TRAIL*3),3));
+      mTgt=SKY.add(new THREE.Mesh(new THREE.SphereGeometry(0.075,16,12),
+        new THREE.MeshBasicMaterial({color:0x53d3ff})));
+      flash=SKY.add(new THREE.Mesh(new THREE.SphereGeometry(0.17,20,14),
+        new THREE.MeshBasicMaterial({color:0xffd447,transparent:true,opacity:0,depthWrite:false})));
+      /* Every catalogue satellite where it actually is at T, from six numbers per satellite
+         least-squares fitted to the reference SGP4 trajectory (catalogue_payload.py).  The two
+         angles are advanced on the CPU in double precision and WRAPPED before they reach the
+         float32 attribute -- unwrapped they reach 1.8e5 rad by mission end, where float32 steps
+         are a degree wide and the whole cloud moves in visible jerks. */
+      if(CAT&&CAT.sats&&CAT.sats.length){
+        var NS=CAT.sats.length;
+        CATN=new Float64Array(NS);CATR0=new Float64Array(NS);CATRD=new Float64Array(NS);
+        CATU0=new Float64Array(NS);CATUD=new Float64Array(NS);
+        var aAI=new Float32Array(NS*2),aRU=new Float32Array(NS*2),aIns=new Float32Array(NS);
+        var when={};
+        EVa.forEach(function(e){if(when[e.n]===undefined||e.t<when[e.n])when[e.n]=e.t;});
+        for(var q=0;q<NS;q++){
+          var c=CAT.sats[q];
+          CATN[q]=c[0];aAI[q*2]=c[1];aAI[q*2+1]=c[2];
+          CATR0[q]=c[3];CATU0[q]=c[4];CATRD[q]=c[5];CATUD[q]=c[6];
+          aIns[q]=(when[c[0]]!==undefined)?when[c[0]]:1e9;
+        }
+        var cgeo=new THREE.BufferGeometry();
+        cgeo.setAttribute("position",new THREE.BufferAttribute(new Float32Array(NS*3),3));
+        cgeo.setAttribute("aAI",new THREE.BufferAttribute(aAI,2));
+        cgeo.setAttribute("aRU",new THREE.BufferAttribute(aRU,2));
+        cgeo.setAttribute("aIns",new THREE.BufferAttribute(aIns,1));
+        catPts=new THREE.Points(cgeo,new THREE.ShaderMaterial({
+          uniforms:{uT:{value:0}},transparent:true,depthWrite:false,
+          vertexShader:["attribute vec2 aAI;attribute vec2 aRU;attribute float aIns;",
+            "uniform float uT;varying float vIns;",
+            "void main(){",
+            "float cR=cos(aRU.x),sR=sin(aRU.x),cU=cos(aRU.y),sU=sin(aRU.y);",
+            "float ci=cos(aAI.y),si=sin(aAI.y);",
+            "vec3 p=aAI.x*vec3(cR*cU-sR*sU*ci, sR*cU+cR*sU*ci, sU*si);",
+            "vec3 q=vec3(p.x,p.z,-p.y)/1000.0;",
+            "vIns=step(aIns,uT);",
+            "vec4 mv=modelViewMatrix*vec4(q,1.0);",
+            "gl_PointSize=max(1.2,46.0/(-mv.z));",
+            "gl_Position=projectionMatrix*mv;}"].join("\n"),
+          fragmentShader:["varying float vIns;",
+            "void main(){float d=length(gl_PointCoord-vec2(0.5));if(d>0.5)discard;",
+            "vec3 pend=vec3(0.30,0.40,0.56);",
+            "vec3 done=vec3(1.00,0.62,0.26);",
+            "gl_FragColor=vec4(mix(pend,done,vIns),mix(0.55,0.95,vIns));}"].join("\n")}));
+        catPts.visible=false;catPts.frustumCulled=false;
+        SKY.add(catPts);
+      }
+    }
+
+    /* ---------------- controls ---------------- */
+    el("b-play").onclick=function(){
+      CLK.playing=!CLK.playing;
+      if(CLK.playing)anchor(CLK.T);
+      this.setAttribute("aria-pressed",String(CLK.playing));
+      this.textContent=CLK.playing?"Pause":"Play";
+    };
+    el("sel-rate").onchange=function(){CLK.rate=parseFloat(this.value);anchor(CLK.T);};
+    el("b-prev").onclick=function(){jump(-1);};
+    el("b-next").onclick=function(){jump(1);};
+    el("b-follow").onclick=function(){
+      var v=!(SKY&&SKY.getFollow());
+      if(SKY)SKY.setFollow(v);
+      this.setAttribute("aria-pressed",String(v));
+    };
+    el("b-centre").onclick=function(){if(SKY&&SKY.followBody)SKY.frame(SKY.followBody,24);};
+    /* choosing a flier rebuilds this arm around it (same payloads, same clock position): the focus
+       owns the panels, the inset, the target ring, the future path and the events strip */
+    if(WHO_SEL)el("sel-who").onchange=function(){activate(TABID,this.value,true);};
+    if(CAT&&el("b-cat"))el("b-cat").onclick=function(){
+      SHOWCAT=!SHOWCAT;
+      this.setAttribute("aria-pressed",String(SHOWCAT));
+      if(catPts)catPts.visible=SHOWCAT;
+    };
+    if(CTX){
+      if(el("b-evp"))el("b-evp").onclick=function(){stepEvent(-1);};
+      if(el("b-evn"))el("b-evn").onclick=function(){stepEvent(1);};
+      var lg=el("evlog");if(lg)lg.onclick=function(ev){var n=ev.target;while(n&&n!==lg&&!(n.dataset&&n.dataset.t))n=n.parentNode;
+        if(n&&n.dataset&&n.dataset.t){anchor(Math.max(CLK.lo,Math.min(CLK.hi,+n.dataset.t)));}};
+      if(document.addEventListener&&!window.__atlasKeys){window.__atlasKeys=true;
+        document.addEventListener("keydown",function(ev){
+          if(!CUR||!CUR.stepEvent||/INPUT|SELECT|TEXTAREA/.test(ev.target&&ev.target.tagName))return;
+          if(ev.key==="ArrowRight"||ev.key==="n"){CUR.stepEvent(1);ev.preventDefault();}
+          else if(ev.key==="ArrowLeft"||ev.key==="p"){CUR.stepEvent(-1);ev.preventDefault();}
+          else if(ev.key===" "){el("b-play").onclick.call(el("b-play"));ev.preventDefault();}});}
+    }
+    self.stepEvent=stepEvent;
+    /* Next / Prev land LEAD before the encounter (PH 2026-10-02), clamped to the clock span, so the approach and the
+       live inset are seen; the rail counts an encounter as current from that instant on (render below) */
+    var LEAD=20/86400;
+    function anchorOf(k){return Math.max(CLK.lo,Math.min(CLK.hi,TT[LIST[k]]-LEAD));}
+    function jump(d){
+      var k=0;
+      while(k<LIST.length&&anchorOf(k)<=CLK.T+1e-9)k++;        // the first encounter whose anchor lies ahead
+      k=Math.max(0,Math.min(LIST.length-1,d>0?k:k-2));
+      anchor(anchorOf(k));idx=k;paint();
+    }
+    self.anchorOf=anchorOf;
+
+    /* ============ the render: once per frame, from T and nothing else ============ */
+    var STG={el:[0,0,0,0,0,0],per:0,inside:false};
+    var V0=SKY?new THREE.Vector3():null,V1=SKY?new THREE.Vector3():null;
+    var tgtTrack=null,tgtFor=-1;
+    self.render=function(T){
+      el("c-day").textContent=("     "+T.toFixed(2)).slice(-7);
+      el("c-utc").textContent=utcAt(T);
+      if(SPIN_HELD!==subHeld){subHeld=SPIN_HELD;
+        el("c-sub").textContent=SPIN_HELD?"utc · earth spin held":"utc";}
+      if(!SKY)return;
+      SKY.orient(T);
+      /* where the clock stands in the event list -- drives the rail text, never the geometry */
+      var k=0;
+      while(k<LIST.length-1&&TT[LIST[k+1]]-LEAD<=T)k++;       // an encounter is current from LEAD before it
+      var cw=EV[LIST[k]].who||"";
+      /* every body, each from its own track; a body with recorded rows sits at target + RECORDED offset
+         inside its hold windows; a body with recorded arcs shows its arrow inside each of them */
+      var pa=ringsAll.geometry.attributes.position,pm=mIns.geometry.attributes.position,rcol=ringsAll.geometry.attributes.color;
+      var selI=FB?byWho[FB.who]:(byWho[cw]!==undefined?byWho[cw]:0),thrusting=-1;
+      /* The platform selector decides what is DRAWN, not only what is focused (PH 2026-09-30): "" is the
+         tab's own platforms, "*" is everything, a name is that platform alone. */
+      for(var q=0;q<nB;q++){
+        var b=BODIES[q];
+        placeBody(b,T);
+        var drawn=WHO==="*"||(WHO?b.who===WHO:b.cls!=="wing");
+        if(b.inside&&drawn){
+          /* PH 2026-09-30: draw the CURRENT orbit of each object, changing as arcs are flown; the only burn
+             artefact is the colour of that orbit line (red while the clock is inside a recorded arc) */
+          segsInto(b.SI.el,SEG,pa.array,q*SEG*6);
+          pm.array[q*3]=b.pos[0];pm.array[q*3+1]=b.pos[1];pm.array[q*3+2]=b.pos[2];
+        }else{                                   /* outside its own flown span: not drawn */
+          for(var z=0;z<SEG*6;z++)pa.array[q*SEG*6+z]=0;
+          pm.array[q*3]=0;pm.array[q*3+1]=0;pm.array[q*3+2]=0;
+        }
+        var bi=b.BURNS.length?burnAt(b,T):-1, on=bi>=0&&b.inside&&drawn, cc=on?BURNCOL:COL[b.cls];
+        for(var v=0;v<SEG*2;v++){rcol.array[(q*SEG*2+v)*3]=cc[0];rcol.array[(q*SEG*2+v)*3+1]=cc[1];rcol.array[(q*SEG*2+v)*3+2]=cc[2];}
+        if(on&&q===selI)thrusting=bi;
+      }
+      pa.needsUpdate=true;pm.needsUpdate=true;rcol.needsUpdate=true;
+      /* the one being watched: marker, swept trail (its own orbit ring only on arms without context) */
+      var sel=BODIES[selI];
+      ringInto(sel.SI.el,SEGSEL,ringSel.geometry.attributes.position.array,0);
+      ringSel.geometry.attributes.position.needsUpdate=true;
+      ringSel.visible=sel.inside&&!CTX;
+      V0.set(sel.pos[0],sel.pos[1],sel.pos[2]);
+      SKY.followBody=V0;
+      var PS=CTX?pairState(T,k):null;
+      trailIns.visible=false;                 // no swept trail (PH 2026-09-30: only the current orbit of each object)
+      mIns.material.size=MARK;
+      if(FB&&FB.BURNS.length)engine(T,thrusting);
+      /* the target: its own single-state track, shown around its own encounter.  The window
+         is set in REAL seconds, so it lasts the same on screen at every clock rate. */
+      var win=Math.min(0.45*gapMed,Math.max(0.0025,1.1*CLK.rate/86400));
+      var nearI=-1;
+      if(Math.abs(T-TT[LIST[k]])<win)nearI=LIST[k];
+      else if(k+1<LIST.length&&Math.abs(TT[LIST[k+1]]-T)<win)nearI=LIST[k+1];
+      if(nearI>=0){
+        if(tgtFor!==nearI){
+          tgtFor=nearI;
+          tgtTrack=track([{t:TT[nearI],el:EV[nearI].el_t,per:EV[nearI].per_t}]);
+        }
+        var stt=stateAt(tgtTrack,T,STG);
+        ringInto(stt.el,SEGSEL,ringTgt.geometry.attributes.position.array,0);
+        ringTgt.geometry.attributes.position.needsUpdate=true;
+        basis(stt.el);atNu(stt.el,stt.el[5],TMP,0);V1.set(TMP[0],TMP[1],TMP[2]);
+        mTgt.position.copy(V1);
+        sweep(trailTgt,stt.el,stt.per,[0.33,0.83,1.0]);
+        ringTgt.visible=mTgt.visible=true;trailTgt.visible=false;
+        var g=Math.max(0,1-Math.abs(T-TT[nearI])/win);
+        flash.position.set(EV[nearI].ri[0]/U,EV[nearI].ri[2]/U,-EV[nearI].ri[1]/U);
+        flash.material.opacity=0.45*g*g;flash.scale.setScalar(1+1.6*g);
+      }else{
+        ringTgt.visible=mTgt.visible=trailTgt.visible=false;
+        flash.material.opacity=0;
+      }
+      /* the target's orbit + marker for the whole leg / until the next pass, and the flown path from
+         the clock to the target; inside the encounter window the FLOWN target state above is the one shown */
+      if(ringCtx)context(T,k,sel.inside,nearI>=0,PS);
+      /* instruments, event strip and the live relative-motion inset, ~10 Hz */
+      var wt0=now();
+      if(CTX&&wt0-lastInstr>100){lastInstr=wt0;instruments(T,k,PS);eventStrip(T);}
+      insetAt(T,false);                    // the encounter inset: static at the last encounter, live only inside a window
+      if(SHOWCAT&&catPts){
+        var a=catPts.geometry.attributes.aRU;
+        for(var c=0;c<CATN.length;c++){
+          a.array[c*2]=wrap(CATR0[c]+CATRD[c]*T);
+          a.array[c*2+1]=wrap(CATU0[c]+CATUD[c]*T);
+        }
+        a.needsUpdate=true;catPts.material.uniforms.uT.value=T;
+      }
+      /* rail text at most ~8 Hz: at a week a second the encounters go by faster than the eye */
+      var wt=now();
+      if(k!==idx&&wt-lastPaint>120){idx=k;paint();}
+      cursorAt(T);
+    };
+    /* The trail is the arc the body actually sweeps in the last ~0.35 s of REAL time, so it
+       grows with the clock rate and shrinks with it: a short tail at real time, the whole
+       orbit lit at a day a second.  That is what keeps the motion readable, and honest, once
+       the along-track angle per frame is larger than the eye can follow. */
+    function sweep(line,e,per,rgb){
+      var span=TAU*Math.min(1,Math.max(0.055,0.35*CLK.rate/per));
+      var po=line.geometry.attributes.position,co=line.geometry.attributes.color;
+      basis(e);
+      for(var q=0;q<TRAIL;q++){
+        var f=q/(TRAIL-1),a=f*f;
+        atNu(e,e[5]-span*(1-f),po.array,q*3);
+        co.array[q*3]=rgb[0]*a;co.array[q*3+1]=rgb[1]*a;co.array[q*3+2]=rgb[2]*a;
+      }
+      po.needsUpdate=true;co.needsUpdate=true;
+    }
+
+    /* Arrow at body P (scene coords) along unit thrust direction d; all widths in PIXELS at P's camera distance.
+         shaft    camera-facing quad, 30 px long, 2 px wide at the body tapering to 1 px at the tip
+         chevron  two 6 px strokes, 1.2 px wide, leaving the tip at +-30 deg back along the shaft
+       Solid burn colour; anti-aliased by the renderer's MSAA.  It is an annotation, not a body. */
+    function arrowAt(mesh,P,dx,dy,dz){
+      var C=SKY.camPos(),ex=C.x-P[0],ey=C.y-P[1],ez=C.z-P[2],dist=Math.hypot(ex,ey,ez)||1;
+      var px=SKY.pxWorld(dist);
+      var sx=dy*ez-dz*ey,sy=dz*ex-dx*ez,sz=dx*ey-dy*ex,sn=Math.hypot(sx,sy,sz);
+      if(sn<1e-6){sx=P[1];sy=-P[0];sz=0;sn=Math.hypot(sx,sy,sz)||1;}      // shaft points at the camera: any side
+      sx/=sn;sy/=sn;sz/=sn;
+      var L=30*px,w0=1.0*px,w1=0.5*px,a=mesh.geometry.attributes.position.array,q=0;
+      var put=function(x,y,z){a[q++]=x;a[q++]=y;a[q++]=z;};
+      var tx=P[0]+dx*L,ty=P[1]+dy*L,tz=P[2]+dz*L;
+      put(P[0]-sx*w0,P[1]-sy*w0,P[2]-sz*w0);put(tx-sx*w1,ty-sy*w1,tz-sz*w1);put(tx+sx*w1,ty+sy*w1,tz+sz*w1);
+      put(P[0]-sx*w0,P[1]-sy*w0,P[2]-sz*w0);put(tx+sx*w1,ty+sy*w1,tz+sz*w1);put(P[0]+sx*w0,P[1]+sy*w0,P[2]+sz*w0);
+      var c30=Math.cos(Math.PI/6),s30=0.5,Lc=6*px,wc=0.6*px;
+      for(var sgn=-1;sgn<=1;sgn+=2){
+        var vx=-dx*c30+sx*s30*sgn,vy=-dy*c30+sy*s30*sgn,vz=-dz*c30+sz*s30*sgn;   // stroke direction
+        var ux=dx*s30+sx*c30*sgn,uy=dy*s30+sy*c30*sgn,uz=dz*s30+sz*c30*sgn;      // its in-plane normal
+        var fx=tx+vx*Lc,fy=ty+vy*Lc,fz=tz+vz*Lc;
+        put(tx-ux*wc,ty-uy*wc,tz-uz*wc);put(fx-ux*wc,fy-uy*wc,fz-uz*wc);put(fx+ux*wc,fy+uy*wc,fz+uz*wc);
+        put(tx-ux*wc,ty-uy*wc,tz-uz*wc);put(fx+ux*wc,fy+uy*wc,fz+uz*wc);put(tx+ux*wc,ty+uy*wc,tz+uz*wc);
+      }
+      mesh.geometry.attributes.position.needsUpdate=true;
+    }
+
+    /* ================= body placement: target state + inspector position (exported for the gates) =================
+       a body with a tour payload: target = the leg's, from ITS recorded rows (P.tgt); inside the recorded
+               relative window (hand-off -> next departure, e.rel rows) the body is target + recorded RTN offset
+       hybrid  (the drifter as focus) target = the next pass's; the flown state at the pass inside the encounter
+               window, the catalogue layer's fitted mean orbit between passes; drifter from its own track  */
+    var CATIX=null,PV=[0,0,0],SI2={el:[0,0,0,0,0,0],per:0,inside:false},SC2={el:[0,0,0,0,0,0],per:0,inside:false};
+    var PT2=[0,0,0],RL2=[0,0,0],TRI2=[0,0,0,0,0,0,0,0,0];
+    function triad(e,P,TRI){                 // RTN of a displayed state, scene axes -> TRI = [R,T,N]
+      velDir(e,PV);
+      var rn=Math.hypot(P[0],P[1],P[2])||1,rx=P[0]/rn,ry=P[1]/rn,rz=P[2]/rn;
+      var nx=ry*PV[2]-rz*PV[1],ny=rz*PV[0]-rx*PV[2],nz=rx*PV[1]-ry*PV[0],nn=Math.hypot(nx,ny,nz)||1;
+      nx/=nn;ny/=nn;nz/=nn;
+      TRI[0]=rx;TRI[1]=ry;TRI[2]=rz;TRI[3]=ny*rz-nz*ry;TRI[4]=nz*rx-nx*rz;TRI[5]=nx*ry-ny*rx;TRI[6]=nx;TRI[7]=ny;TRI[8]=nz;
+    }
+    function relAt(b,rel,sec,out){           // recorded relative offset at sec from arrival, linear between rows
+      var n=rel.length,c=b.relC; if(c>=n)c=n-1;
+      while(c>0&&rel[c][0]>sec)c--;
+      while(c<n-1&&rel[c+1][0]<=sec)c++;
+      b.relC=c;
+      var a=rel[c],d=rel[Math.min(n-1,c+1)],u=(d[0]>a[0])?Math.max(0,Math.min(1,(sec-a[0])/(d[0]-a[0]))):0;
+      out[0]=a[1]+(d[1]-a[1])*u;out[1]=a[2]+(d[2]-a[2])*u;out[2]=a[3]+(d[3]-a[3])*u;return out;
+    }
+    function offsetInto(out,PT,RL,TRI){      // scene units are 1000 km; the recorded offset is metres in (along, radial, cross)
+      out[0]=PT[0]+(RL[1]*TRI[0]+RL[0]*TRI[3]+RL[2]*TRI[6])/1e6;
+      out[1]=PT[1]+(RL[1]*TRI[1]+RL[0]*TRI[4]+RL[2]*TRI[7])/1e6;
+      out[2]=PT[2]+(RL[1]*TRI[2]+RL[0]*TRI[5]+RL[2]*TRI[8])/1e6;
+    }
+    function tourTarget(b,T){                // -> leg index whose recorded window holds T, target elements in b.SC; -1 if none
+      var Lg=b.P.meta.legs||[],i=Math.max(0,Math.min(Lg.length-1,b.ctxFor<0?0:b.ctxFor));
+      while(i>0&&Lg[i].t0>T)i--;
+      while(i<Lg.length-1&&Lg[i+1].t0<=T)i++;
+      var key=i;
+      /* the previous leg's recorded relative window runs right up to this departure (rounding can put its
+         last row a hair past it): while it still covers T, the pair is still that leg's */
+      if(key>0){var pe=b.EV[key-1];if(pe.rel&&pe.rel.length&&(T-b.TT[key-1])*86400<=pe.rel[pe.rel.length-1][0]+1e-6)key--;}
+      if(key!==b.ctxFor){
+        var tg=(b.P.tgt||[])[key];
+        b.CTXT=tg&&tg.rows.length?track(tg.rows.map(function(r){return {t:r[0],el:r[1],per:r[2]};})):null;
+        b.ctxFor=key;b.norad=tg?tg.n:null;
+      }
+      if(!b.CTXT)return -1;
+      stateAt(b.CTXT,T,b.SC);return key;
+    }
+    function placeBody(b,T){
+      if(b.cat){                              /* single-target platform: its target's catalogue fit, the sized hold behind */
+        b.key=-1;b.mode="off";b.inside=false;
+        if(!CAT||!CAT.sats)return;
+        if(b.CTXT===null||b.CTXT===undefined){if(!CATIX){CATIX={};for(var q0=0;q0<CAT.sats.length;q0++)CATIX[CAT.sats[q0][0]]=q0;}
+          var ci=CATIX[b.cat.n];b.CTXT=(ci===undefined)?-1:ci;}
+        if(b.CTXT<0)return;
+        var c=CAT.sats[b.CTXT],S=b.SC;
+        S.el[0]=c[1];S.el[1]=0;S.el[2]=c[2];S.el[3]=wrap(c[3]+c[5]*T);S.el[4]=0;S.el[5]=wrap(c[4]+c[6]*T);S.per=0;
+        for(var q1=0;q1<6;q1++)b.SI.el[q1]=S.el[q1]; b.SI.per=b.tr.per[0];
+        b.inside=(T>=CLK.lo-1e-9&&T<=CLK.hi+1e-9); b.bel=S.el;
+        if(!b.inside)return;
+        basis(S.el);atNu(S.el,S.el[5],b.PT,0);triad(S.el,b.PT,b.TRI);
+        b.RL[0]=-b.cat.trail_m;b.RL[1]=0;b.RL[2]=0;offsetInto(b.pos,b.PT,b.RL,b.TRI);b.mode="cat";
+        return;
+      }
+      var st=stateAt(b.tr,T,b.SI); b.inside=st.inside; b.bel=st.el; b.key=-1; b.mode="off";
+      if(!st.inside)return;
+      basis(st.el);atNu(st.el,st.el[5],b.pos,0); b.mode="disp";
+      if(!b.P)return;
+      var key=tourTarget(b,T); b.key=key;
+      if(key<0)return;
+      basis(b.SC.el);atNu(b.SC.el,b.SC.el[5],b.PT,0);triad(b.SC.el,b.PT,b.TRI);
+      var e=b.EV[key];
+      if(e.rel&&e.rel.length>1){
+        var sec=(T-b.TT[key])*86400;
+        if(sec>=e.rel[0][0]-1e-3&&sec<=e.rel[e.rel.length-1][0]+1e-3){
+          relAt(b,e.rel,sec,b.RL);offsetInto(b.pos,b.PT,b.RL,b.TRI);b.mode="rec";b.bel=b.SC.el;
+        }
+      }
+      if(b.mode==="disp"){
+        var dx=(b.pos[0]-b.PT[0])*1e6,dy=(b.pos[1]-b.PT[1])*1e6,dz=(b.pos[2]-b.PT[2])*1e6,R=b.RL,Tr=b.TRI;   // metres
+        R[0]=dx*Tr[3]+dy*Tr[4]+dz*Tr[5];R[1]=dx*Tr[0]+dy*Tr[1]+dz*Tr[2];R[2]=dx*Tr[6]+dy*Tr[7]+dz*Tr[8];
+      }
+    }
+    function hybridTarget(T,k){              // -> key (pass index in LIST), target elements in FB.SC, or -1
+      var nx=(T<TT[LIST[k]])?k:Math.min(LIST.length-1,k+1),ev=EV[LIST[nx]],key=nx;
+      if(ringCtx)ringCtx.norad=ev.n;              // every call: the range-rate probe a second earlier may look at another pass
+      var win=Math.min(0.45*gapMed,Math.max(0.0025,1.1*CLK.rate/86400));
+      if(Math.abs(T-TT[LIST[nx]])<win){        // the flown state at the pass, as the encounter view draws it
+        if(tgtFor!==LIST[nx]){tgtFor=LIST[nx];tgtTrack=track([{t:TT[LIST[nx]],el:ev.el_t,per:ev.per_t}]);}
+        stateAt(tgtTrack,T,FB.SC);return key;
+      }
+      if(!CAT||!CAT.sats)return -1;
+      if(key!==FB.ctxFor){
+        if(!CATIX){CATIX={};for(var q=0;q<CAT.sats.length;q++)CATIX[CAT.sats[q][0]]=q;}
+        var ci=CATIX[ev.n];FB.CTXT=(ci===undefined)?null:ci;FB.ctxFor=key;
+      }
+      if(FB.CTXT===null)return -1;
+      var c=CAT.sats[FB.CTXT],S=FB.SC;
+      S.el[0]=c[1];S.el[1]=0;S.el[2]=c[2];S.el[3]=wrap(c[3]+c[5]*T);S.el[4]=0;S.el[5]=wrap(c[4]+c[6]*T);
+      S.per=0;return key;
+    }
+    function pairState(T,k){                 // the FOCUS pair: target state + focus placement + relative state
+      if(!FB)return null;
+      var e,key,mode;
+      if(MODE==="tour"){
+        placeBody(FB,T);
+        if(FB.key<0||!FB.inside)return null;
+        key=FB.key;e=FB.EV[key];mode=FB.mode;
+        if(ringCtx)ringCtx.norad=FB.norad;
+      }else{
+        key=hybridTarget(T,k);
+        if(key<0)return null;
+        e=EV[LIST[key]];mode="disp";
+        basis(FB.SC.el);atNu(FB.SC.el,FB.SC.el[5],FB.PT,0);triad(FB.SC.el,FB.PT,FB.TRI);
+        var s2=stateAt(FB.tr,T,SI2);
+        basis(s2.el);atNu(s2.el,s2.el[5],FB.pos,0);
+        var dx=(FB.pos[0]-FB.PT[0])*1e6,dy=(FB.pos[1]-FB.PT[1])*1e6,dz=(FB.pos[2]-FB.PT[2])*1e6,R=FB.RL,Tr=FB.TRI;
+        R[0]=dx*Tr[3]+dy*Tr[4]+dz*Tr[5];R[1]=dx*Tr[0]+dy*Tr[1]+dz*Tr[2];R[2]=dx*Tr[6]+dy*Tr[7]+dz*Tr[8];
+      }
+      return {key:key,e:e,mode:mode,pi:[FB.pos[0],FB.pos[1],FB.pos[2]],pt:[FB.PT[0],FB.PT[1],FB.PT[2]],tel:FB.SC.el.slice(),
+              rel:[FB.RL[0],FB.RL[1],FB.RL[2]],range:Math.hypot(FB.RL[0],FB.RL[1],FB.RL[2])};
+    }
+    /* gates: TEME km positions of both bodies + the relative state, for the focus (default) or for ANY body
+       with a tour payload by id -- every inspector is placed by the same placeBody() the frame uses */
+    self.pairAt=function(T,who){
+      var b=(who===undefined||who===null||who==="")?FB:BODIES[byWho[who]];
+      if(!b)return null;
+      if(b===FB&&MODE!=="tour"){
+        var k=0;while(k<LIST.length-1&&TT[LIST[k+1]]<=T)k++;
+        var ps=pairState(T,k); if(!ps)return null;
+        return {mode:ps.mode,key:ps.key,range_m:ps.range,rel_m:ps.rel,who:b.who,
+                ins:[ps.pi[0]*U,-ps.pi[2]*U,ps.pi[1]*U],tgt:[ps.pt[0]*U,-ps.pt[2]*U,ps.pt[1]*U]};
+      }
+      if(!b.P)return null;
+      placeBody(b,T); if(b.key<0||!b.inside)return null;
+      return {mode:b.mode,key:b.key,range_m:Math.hypot(b.RL[0],b.RL[1],b.RL[2]),rel_m:b.RL.slice(),who:b.who,
+              ins:[b.pos[0]*U,-b.pos[2]*U,b.pos[1]*U],tgt:[b.PT[0]*U,-b.PT[2]*U,b.PT[1]*U]};
+    };
+    self.bodies=function(){return BODIES.map(function(b){return {who:b.who,cls:b.cls,rec:b.rec,cat:!!b.cat,n_burns:b.BURNS.length,
+      inside:b.inside,mode:b.mode,pos:[b.pos[0]*U,-b.pos[2]*U,b.pos[1]*U],arrow:b.arrow?b.arrow.visible:null};});};
+    self.mode=MODE; self.focus=FB?FB.who:null;
+
+    /* Context drawn from the pair: the target's ring + marker, and the flown path from the clock
+       to the target (focus's own track; inside a recorded window, target + recorded offset). */
+    function context(T,k,inside,flownShown,PS){
+      if(PS&&inside&&!flownShown){
+        ringInto(PS.tel,SEGSEL,ringCtx.geometry.attributes.position.array,0);
+        ringCtx.geometry.attributes.position.needsUpdate=true;
+        mCtx.position.set(PS.pt[0],PS.pt[1],PS.pt[2]);
+        ringCtx.visible=mCtx.visible=true;
+      }else ringCtx.visible=mCtx.visible=false;
+      var tEnd=PS?((MODE==="tour")?TT[PS.key]:TT[LIST[PS.key]]):-1;
+      if(PS&&inside&&tEnd>T){
+        var tr=FB.tr,c0=tr.c,ah=pathAhead.geometry.attributes.position.array;
+        var dt=Math.max(45/86400,(tEnd-T)/PATHN),na=Math.min(PATHN,Math.max(2,Math.floor((tEnd-T)/dt)+1));
+        var e=PS.e,rel=(MODE==="tour"&&e.rel&&e.rel.length>1)?e.rel:null,CT=FB.CTXT,rc0=FB.relC;
+        for(var i=0;i<PATHN;i++){
+          var ta=(i<na)?Math.min(tEnd,T+i*dt):tEnd,sec=(ta-tEnd)*86400;
+          if(rel&&sec>=rel[0][0]-1e-3&&sec<=rel[rel.length-1][0]+1e-3&&CT){
+            stateAt(CT,ta,SC2);basis(SC2.el);atNu(SC2.el,SC2.el[5],PT2,0);triad(SC2.el,PT2,TRI2);relAt(FB,rel,sec,RL2);
+            offsetInto(TMP,PT2,RL2,TRI2);ah[i*3]=TMP[0];ah[i*3+1]=TMP[1];ah[i*3+2]=TMP[2];
+          }else{stateAt(tr,ta,SI2);basis(SI2.el);atNu(SI2.el,SI2.el[5],ah,i*3);}
+        }
+        tr.c=c0;FB.relC=rc0;
+        pathAhead.geometry.attributes.position.needsUpdate=true;pathAhead.visible=false;   // no future-path artefact (PH 2026-09-30)
+      }else pathAhead.visible=false;
+    }
+
+    /* ================= instruments (mission control) ================= */
+    var lastInstr=0,EVL=[],evC=0,lastStrip=-1,lastStripAt=0;
+    function dvUsed(T){
+      if(!FB||!FB.BURNS.length)return 0;
+      burnAt(FB,T);var x=FB.BURNS[FB.BC];
+      if(T<x.t0)return FB.BDV[FB.BC];
+      return FB.BDV[FB.BC]+x.dv*Math.max(0,Math.min(1,(T-x.t0)/((x.t1-x.t0)||1)));
+    }
+    function tminus(d){                       // days -> "T-hh:mm:ss" / "T-3d 04:12:07"
+      var s=Math.max(0,Math.round(d*86400)),dd=Math.floor(s/86400);s-=dd*86400;
+      var h=Math.floor(s/3600),m=Math.floor((s-h*3600)/60),x=s-h*3600-m*60,p=function(v){return (v<10?"0":"")+v;};
+      return "T−"+(dd?dd+"d ":"")+p(h)+":"+p(m)+":"+p(x);
+    }
+    function kmRange(m){return m<1000?m.toFixed(1)+" m":m<1e5?(m/1000).toFixed(3)+" km":m<1e6?(m/1000).toFixed(1)+" km":Math.round(m/1000)+" km";}
+    /* event list: burn start / end, hold arrival or TCA, leg departure, hop start -- of the FOCUS */
+    (function(){
+      BURNS.forEach(function(b,q){
+        var what=b.d?(BKINDS[b.k]||"arc"):(b.hop?"hop burn":(b.s>0?"+T burn":"−T burn"));
+        var where=b.d?" · leg "+(b.i+1):(b.hop?"":" · NORAD "+EV[b.i].n);
+        EVL.push({t:b.t0,l:"burn start · "+what+where,k:"b0",q:q});
+        EVL.push({t:b.t1,l:"burn end · "+what+where,k:"b1",q:q});});
+      LIST.forEach(function(i,q){EVL.push({t:TT[i],l:(MODE==="tour"?"hold reached · leg "+(q+1)+" · ":"TCA · pass "+(q+1)+" · ")+EV[i].n,k:"e",q:q});});
+      if(MODE==="tour")(Mt.legs||[]).forEach(function(g,q){if(q)EVL.push({t:g.t0,l:"departure · leg "+(q+1)+" · "+g.frm+" → "+g.to,k:"d",q:q});});
+      EVL.sort(function(a,b){return a.t-b.t;});
+    })();
+    function evNext(T){                       // index of the first event after T
+      var n=EVL.length,c=evC;if(c>=n)c=n-1;
+      while(c>0&&EVL[c].t>T)c--;
+      while(c<n&&EVL[c].t<=T)c++;
+      evC=Math.min(c,n-1);return c;
+    }
+    function stepEvent(d){
+      if(!EVL.length)return;
+      var c=evNext(CLK.T),j=d>0?c:c-1;
+      if(d<0&&j>=0&&CLK.T-EVL[j].t<0.5/86400)j--;        // sitting on an event: go to the one before
+      j=Math.max(0,Math.min(EVL.length-1,j));
+      anchor(Math.max(CLK.lo,Math.min(CLK.hi,EVL[j].t)));
+    }
+    function eventStrip(T){
+      var c=evNext(T),wt=now();
+      if(c===lastStrip&&wt-lastStripAt<900)return;
+      lastStrip=c;lastStripAt=wt;
+      var rows=[];
+      for(var j=Math.max(0,c-1);j<Math.min(EVL.length,c+3);j++){
+        var ev=EVL[j],past=ev.t<=T;
+        rows.push('<div class="evr'+(past?" past":(j===c?" next":""))+'" data-t="'+ev.t+'"><b>'+(past?"T+"+tminus(T-ev.t).slice(2):tminus(ev.t-T))+
+                  '</b><span>'+ev.l+'</span></div>');
+      }
+      var n=el("evlog");if(n)n.innerHTML=rows.join("");
+    }
+    function instruments(T,k,PS){
+      var set=function(id,v,cls){var n=el(id);if(!n)return;if(n.textContent!==v)n.textContent=v;if(cls!==undefined&&n.className!==cls)n.className=cls;};
+      if(PS){
+        var P2=pairState(T-1/86400,k),rr=P2?(PS.range-P2.range)/1000:0;    // km/s over the last second
+        set("i-range",kmRange(PS.range));
+        set("i-rr",(rr<0?"−":"+")+Math.abs(rr).toFixed(4)+" km/s");
+        set("i-tgt","NORAD "+PS.e.n+(PS.mode==="rec"?"  REC":"  DISP"));
+        set("i-leg",(MODE==="tour"?"leg "+(PS.key+1)+" of "+Mt.n_legs:"pass "+(PS.key+1)+" of "+LIST.length));
+      }else{set("i-range","—");set("i-rr","—");set("i-tgt","—");set("i-leg","—");}
+      var c=evNext(T),nx=EVL[c];
+      set("i-next",nx?tminus(nx.t-T)+"  "+nx.l.split(" · ")[0]:"—");
+      var used=dvUsed(T),bud=(MODE==="hybrid"&&LED.dv_budget_ms)?LED.dv_budget_ms:(BSTAT?BSTAT.dv_sum_mps:0);
+      set("i-dv",used.toFixed(1)+" / "+bud.toFixed(0)+" m/s"+(MODE==="hybrid"?"  ·  left "+(bud-used).toFixed(0):"  flown total"));
+      var bar=el("i-dvbar");if(bar&&bud)bar.style.width=(100*Math.min(1,used/bud)).toFixed(2)+"%";
+      if(MODE==="tour"){
+        /* the keep-out line is the flight's RECORDED radius (meta.keepout_m), never typed; a flight flown
+           before the keep-out existed has none, and the line says so */
+        var ko="—  (transfer)",cls="ko-ok";
+        if(PS&&PS.e.rel&&PS.e.rel.length>1){
+          var sec=(T-TT[PS.key])*86400,rel=PS.e.rel,mn=Infinity;
+          if(sec>=rel[0][0]){for(var q=0;q<rel.length&&rel[q][0]<=sec;q++){var d=Math.hypot(rel[q][1],rel[q][2],rel[q][3]);if(d<mn)mn=d;}}
+          if(isFinite(mn)){ko=mn.toFixed(1)+" m  min so far · "+(KO!==null?"keep-out "+fmt(KO,0)+" m":"no keep-out on this flight");
+            cls=(KO!==null&&mn<KO)?"ko-red":"ko-ok";}
+        }
+        set("i-ko",ko,cls);
+      }else if(PS)set("i-ko","rec miss at TCA "+km(PS.e.miss)+" · band "+(M.band?M.band.join("–"):"")+" km","ko-ok");
+    }
+
+    /* ---------------- rail ---------------- */
+    var TERM=M.terminal;
+    var koText=function(v){return (v===null||v===undefined)?"none recorded on this flight":fmt(v,0)+" m";};
+    /* the wing's keep-out: the wing fleet-level meta if it records one, else the set recorded by the
+       wing's own inspector payloads; never a typed value */
+    var WKO=null,WKOSET=[];
+    if(WINGM&&WINGM.keepout_m!==undefined&&WINGM.keepout_m!==null)WKO=WINGM.keepout_m;
+    WINGREC.forEach(function(b){var v=b.P.meta.keepout_m;if(v!==undefined&&v!==null&&WKOSET.indexOf(v)<0)WKOSET.push(v);});
+    if(WKO===null&&WKOSET.length===1)WKO=WKOSET[0];
+    var WCASE=WINGM?(WINGM.case||WINGM.run||""):(WSPEC&&WSPEC.spec?WSPEC.spec.case:"");
+    var WSTUCK=WINGB.map(function(b){return {who:b.who,s:stuckOf(b.P)};}).filter(function(x){return x.s;});
+    var WUNSERVED=WSTUCK.reduce(function(a,x){return a+x.s.unserved;},0);
+    var WRECDEV=WINGREC.filter(function(b){return b.P.meta.dev;}).length;
+    var WFLOWN=!!(WINGM&&WINGM.mode==="flown");
+    /* the leg-boundary re-anchor, stated from the fleet-level meta (fleet_payload.py reads it off every checkpoint's
+       legs[].reanchor.chaser_shift_km); a file without it says so -- nothing is typed here */
+    var reanchorSentence=function(R,who){return R?(" At each leg boundary the "+who+" is re-anchored on the served target's catalogue state; the recorded step is median "+
+        fmt(R.median_km,1)+" km, p95 "+fmt(R.p95_km,1)+" km, max "+fmt(R.max_km,1)+" km ("+R.n_over_100km+" of "+R.n_legs+" legs over 100 km"+
+        (R.n_legs_without_record?", "+R.n_legs_without_record+" legs without a record":"")+"), the relative hold state (~150 m) is carried across; the track shows that jump as recorded."):
+        (" The fleet-level file records no leg-boundary re-anchor statistics.");};
+    var wingSentence=WSPEC?("S1 arm: sized on interrogation's uncovered set "+WCASE+" ([EST] sizing), "+
+        (WFLOWN?"FLOWN here with "+koText(WKO)+" keep-out":"NOT YET FLOWN here as a keep-out fleet -- "+(WINGM?"the fleet-level file is the sizer's [EST]":"no fleet-level file")+
+        (WINGB.length?"; the "+WINGB.length+" S1 arm track"+(WINGB.length>1?"s":"")+" drawn "+(WKOSET.length?"record"+(WKOSET.length>1?"":"s")+" a keep-out of "+WKOSET.map(function(v){return fmt(v,0);}).join(" / ")+" m":"record no keep-out (flown before it existed)"):"")+
+        (WSPEC.spec&&WSPEC.spec.dev&&WINGM&&WINGM.dev?" -- the fleet-level numbers are a DEV stand-in (sized), not for shipping":""))+
+        (WSTUCK.length?" "+WSTUCK.length+" S1 arm platform"+(WSTUCK.length>1?"s are":" is")+" STUCK ("+WSTUCK.map(function(x){return x.who+" at leg "+(x.s.flown+1)+" of "+x.s.sized;}).join("; ")+"), "+WUNSERVED+" target"+(WUNSERVED===1?"":"s")+" unserved -- counted, not hidden.":"")+"."+
+        (WFLOWN?reanchorSentence(WINGM.reanchor,"S1 arm platform"):"")):"";
+    var INSTR=CTX?('<section class="panel"><h2>Vehicle · live<span id="i-mode">'+(FB?nameOf(FB.who):"")+'</span></h2><div class="ig">'+
+        '<div class="ib"><span>range to target</span><b id="i-range">—</b></div>'+
+        '<div class="ib"><span>range rate</span><b id="i-rr">—</b></div>'+
+        '<div class="ib wide"><span>next event</span><b id="i-next">—</b></div>'+
+        '<div class="ib wide"><span>engine</span><p class="eng" id="engine" style="height:16px">coasting</p><p class="eng sub" id="engine-sub">—</p></div>'+
+        '<div class="ib"><span>target</span><b id="i-tgt">—</b></div>'+
+        '<div class="ib"><span>'+(MODE==="tour"?"leg":"pass")+'</span><b id="i-leg">—</b></div>'+
+        '<div class="ib wide"><span>Δv used'+(MODE==="hybrid"?" / budget":" / flown total")+'</span><div class="rail-track" style="margin:2px 0 3px"><s style="background:var(--drift)"></s><u id="i-dvbar" style="width:0%;background:var(--drift)"></u></div><b id="i-dv">—</b></div>'+
+        '<div class="ib wide"><span>'+(MODE==="tour"?"keep-out · min separation this leg (recorded) · radius "+koText(KO):"pass geometry (recorded)")+'</span><b id="i-ko" class="ko-ok">—</b></div>'+
+        '</div></section>'+
+        '<section class="panel"><h2>Events<span>← → step</span></h2><div class="evlog" id="evlog"></div></section>'):"";
+    /* one flown inspector in focus: every figure is the flight's own record (summary.json + leg files) */
+    var TOURPANEL=(MODE==="tour")?('<section class="panel"><h2>Platform [FLOWN] vs sizer [EST]<span>'+nameOf(FB.who)+(FB.cls==="wing"?" · S1 arm":"")+'</span></h2><dl class="kv">'+
+        '<dt>legs flown</dt><dd class="hi">'+Mt.n_legs+' / '+Mt.n_legs_sized+'</dd>'+
+        '<dt>Δv flown</dt><dd class="hi">'+fmt(Mt.dv_total_ms,1)+' m/s</dd>'+
+        '<dt>Δv sized [EST]</dt><dd>'+fmt(Mt.dv_sized_ms,1)+' m/s</dd>'+
+        '<dt>time flown</dt><dd class="hi">'+fmt(Mt.t_total_d,1)+' d</dd>'+
+        '<dt>time sized [EST]</dt><dd>'+fmt(Mt.t_sized_d,1)+' d</dd>'+
+        '<dt>MAX leg</dt><dd>'+fmt(Mt.dv_worst_ms,1)+' m/s</dd>'+
+        '<dt>thrust arcs</dt><dd>'+(BSTAT?BSTAT.n_arcs+' · '+BSTAT.n_terminal_arcs+' terminal':'—')+'</dd>'+
+        '<dt>engine duty</dt><dd>'+(BSTAT?fmt(BSTAT.duty_pct,2)+' %':'—')+'</dd>'+
+        '<dt>keep-out radius</dt><dd'+(KO===null?' class="hi"':'')+'>'+koText(KO)+'</dd></dl>'+
+        (STUCK?'<p class="warn" id="stuck" style="margin-top:6px;border-left-color:var(--drift)">'+STUCK.line+(STUCK.norads?' · NORAD '+STUCK.norads.join(", "):'')+'</p>':'')+
+        '<p class="warn" style="margin-top:6px">Recorded ephemeris '+(Mt.sample_s_leg||600)+' s on the leg, '+(Mt.sample_s_terminal||60)+
+        ' s in the terminal stage; archive sha '+(Mt.archive?String(Mt.archive.sha256).slice(0,12):"—")+(Mt.dev?' · DEV payload (pre-keep-out flight), not for shipping':'')+'.</p></section>'):"";
+    var WINGPANEL=WSPEC?('<section class="panel"><h2>S1 arm'+(WINGM?'<span>'+(WFLOWN?"[FLOWN]":"[EST] sized")+'</span>':'')+'</h2>'+
+        (WINGM?'<dl class="kv"><dt>S1 platforms</dt><dd>'+WINGM.n_sats+'</dd><dt>targets</dt><dd>'+WINGM.n_targets+'</dd>'+
+        '<dt>MAX Δv</dt><dd class="hi">'+fmt(WINGM.max_dv_ms,0)+' m/s</dd><dt>MAX time</dt><dd class="hi">'+fmt(WFLOWN?WINGM.max_t_d:WINGM.campaign_d,0)+' d</dd>'+
+        '<dt>tracks drawn</dt><dd>'+WINGREC.length+(WRECDEV?' ('+WRECDEV+' DEV)':'')+'</dd>'+
+        (WINGCAT.length?'<dt>single-target, no transfer</dt><dd>'+WINGCAT.length+'</dd>':'')+
+        (WSTUCK.length||WUNSERVED?'<dt>stuck platforms</dt><dd class="hi">'+WSTUCK.length+'</dd><dt>targets unserved</dt><dd'+(WUNSERVED?' class="hi"':'')+'>'+WUNSERVED+'</dd>':'')+
+        '<dt>keep-out radius</dt><dd'+(WKO===null?' class="hi"':'')+'>'+koText(WKO)+'</dd></dl>'
+        :'<p class="warn">no S1 arm fleet-level file in this build; '+WINGB.length+' S1 arm tracks drawn'+(WSTUCK.length||WUNSERVED?'; '+WSTUCK.length+' stuck, '+WUNSERVED+' targets unserved':'')+'</p>')+
+        WSTUCK.map(function(x){return '<p class="warn" style="margin-top:4px;border-left-color:var(--drift)">'+x.who+': '+x.s.line+'</p>';}).join("")+
+        (FB&&FB.cat&&FB.cls==="wing"?'<p class="warn" style="margin-top:4px">'+FB.who+': 1 target (NORAD '+FB.cat.n+'), no transfer flown · drawn at the catalogue state of its target, the sized hold '+FB.cat.trail_m+' m behind it · not a recorded track.</p>':'')+
+        (UNLISTED_WING.length?'<p class="warn" style="margin-top:4px;border-left-color:var(--drift)">Not drawn (no tour payload, more than one serve): '+UNLISTED_WING.join("; ")+'.</p>':'')+
+        '<p class="warn" style="margin-top:6px">'+wingSentence+'</p></section>'):"";
+    var DRAWNPANEL=(KIND==="fleet")?('<section class="panel"><h2>Drawn from</h2><dl class="kv">'+
+        '<dt>recorded ephemeris + arcs</dt><dd class="hi">'+REC.length+' of '+people.length+'</dd>'+
+        '<dt>catalogue states only</dt><dd>'+NOREC.length+(FLEETCAT.length?' · '+FLEETCAT.length+' single-target, no transfer flown':'')+'</dd></dl>'+
+        (NOREC.length?'<p class="warn" style="margin-top:6px">No per-platform tour payload for '+NOREC.map(function(b){return nameOf(b.who)+(b.cat?" (1 target, no transfer flown)":"");}).join(", ")+
+          ': drawn at the target\'s catalogue state'+(FLEETCAT.length===NOREC.length?' (held at its one target, the sized hold '+FLEETCAT[0].cat.trail_m+' m behind it)':' at each serve (the v33 fleet treatment)')+', not from a recorded track.</p>':'')+
+        (FB&&FB.cat&&FB.cls==="fleet"?'<p class="warn" style="margin-top:4px">'+FB.who+': 1 target (NORAD '+FB.cat.n+'), no transfer flown · drawn at the catalogue state of its target, the sized hold '+FB.cat.trail_m+' m behind it · not a recorded track.</p>':'')+
+        (UNMATCHED.length?'<p class="warn" style="margin-top:6px">'+UNMATCHED.length+' recorded track(s) are not platforms of this fleet file: '+UNMATCHED.join(", ")+'.</p>':'')+
+        REC.map(function(b){var s=stuckOf(b.P);return s?'<p class="warn" style="margin-top:4px;border-left-color:var(--drift)">'+b.who+': '+s.line+'</p>':'';}).join("")+
+        '</section>'):"";
+    el("armpanel").innerHTML=INSTR+TOURPANEL+{
+      hybrid:(BURNS.length&&!CTX?'<section class="panel"><h2>Engine [FLOWN]<span id="eng-of"></span></h2>'+
+        '<p class="eng" id="engine">coasting</p><p class="eng sub" id="engine-sub">—</p></section>':'')+
+        (MODE==="hybrid"?'<section class="panel"><h2>Running total<span id="run-of"></span></h2>'+
+        '<div class="ledger" id="ledger"></div></section>':'')+
+        '<section class="panel"><h2>Campaign [FLOWN]</h2><dl class="kv">'+
+        '<dt>served</dt><dd class="hi">'+M.n_served+' of '+M.n_targets+'</dd>'+
+        '<dt>unreachable</dt><dd>'+(M.unreachable.length?M.unreachable.join(", "):"none")+'</dd>'+
+        '<dt>Δv burns</dt><dd>'+fmt(LED.dv_nudge_ms,1)+' m/s · '+LED.n_nudges+'</dd>'+
+        '<dt>Δv hops</dt><dd>'+fmt(LED.dv_hop_ms,1)+' m/s · '+LED.n_hops+'</dd>'+
+        '<dt>Δv drag [EST]</dt><dd>'+fmt(LED.dv_drag_ms_EST,1)+' m/s</dd>'+
+        '<dt>reserve</dt><dd>'+fmt(LED.dv_reserve_ms,0)+' m/s</dd>'+
+        '<dt>total / budget</dt><dd class="hi">'+fmt(LED.dv_total_ms,1)+' / '+fmt(LED.dv_budget_ms,0)+'</dd>'+
+        '<dt>time / cap</dt><dd>'+fmt(LED.t_used_d,1)+' / '+fmt(LED.t_cap_d,0)+' d</dd>'+
+        '<dt>miss min / med / max</dt><dd>'+M.miss_min+' / '+M.miss_med+' / '+M.miss_max+' km</dd>'+
+        '<dt>caps lifted</dt><dd>'+(M.caps_lifted?"YES":"no")+'</dd></dl>'+
+        '<p class="warn" style="margin-top:6px">Retired: '+(M.retire_reason||"—")+'.'+
+        (M.unreachable.length?' The '+M.unreachable.length+' unreachable targets are handed to the S1 arm.':'')+'</p></section>'+WINGPANEL,
+      survey:'<section class="panel"><h2>Coverage</h2><dl class="kv">'+
+        [0.5,1,2,3,4].map(function(x){
+          var c=(M.cov_curve&&M.cov_curve[String(x)])||[];
+          var n=c.length?c[c.length-1][1]:(M.cov[String(x)]||0);
+          return "<dt>within "+km(x)+"</dt><dd>"+n+"</dd>";}).join("")+
+        '<dt>median best</dt><dd>'+M.miss_med+' km</dd>'+
+        '<dt>worst</dt><dd>'+M.miss_max+' km</dd></dl>'+
+        '<p class="warn" style="margin-top:6px">'+(M.source_npz||M.run)+(M.source_sha12?' (sha12 '+M.source_sha12+')':'')+
+        (M.derivation?': '+M.derivation:'')+'.</p></section>'+WINGPANEL,
+      fleet:DRAWNPANEL+(FLOWN?('<section class="panel"><h2>Fleet [FLOWN] vs sizer [EST]</h2><dl class="kv">'+
+        '<dt>platforms flown</dt><dd class="hi">'+M.n_flown+' / '+M.n_sats+(ANYSTUCK?' · '+M.n_stuck+' stuck':'')+'</dd>'+
+        '<dt>targets served</dt><dd>'+M.n_serves+' / '+M.n_targets+'</dd>'+
+        '<dt>MAX platform Δv</dt><dd class="hi">'+fmt(M.max_dv_ms,1)+' m/s</dd>'+
+        '<dt>sizer MAX Δv [EST]</dt><dd>'+fmt(M.sized_max_dv_ms,0)+' m/s</dd>'+
+        '<dt>MAX platform time</dt><dd class="hi">'+fmt(M.max_t_d,1)+' d</dd>'+
+        '<dt>sizer campaign [EST]</dt><dd>'+fmt(M.sized_campaign_d,0)+' d</dd>'+
+        '<dt>fleet Δv flown</dt><dd>'+fmt(M.dv_total_ms/1000,1)+' km/s</dd>'+
+        '<dt>fleet Δv sized [EST]</dt><dd>'+fmt(M.sized_dv_total_ms/1000,1)+' km/s</dd>'+
+        '<dt>worst leg</dt><dd>'+fmt(M.worst_leg_ms,1)+' m/s</dd>'+
+        '<dt>keep-out radius</dt><dd'+(M.keepout_m===null?' class="hi"':'')+'>'+koText(M.keepout_m)+'</dd></dl>'+
+        '<p class="warn" style="margin-top:6px">Terminal-stage closest approaches on these flights were '+
+        (TERM?fmt(TERM.min_m,1)+'–'+fmt(TERM.max_m,0)+' m (median '+fmt(TERM.med_m,0)+' m; '+TERM.n_inside_100m+' of '+TERM.n_legs+
+        ' legs inside 100 m)':'not recorded')+(M.keepout_m===null?' — these flights carried NO keep-out (flown before it existed).':' — flown with a '+koText(M.keepout_m)+' keep-out.')+'</p></section>'+
+        '<section class="panel"><h2>Per group · flown</h2><dl class="kv">'+
+        Object.keys(M.groups).sort().filter(function(g){return M.groups[g].n_targets>2;}).map(function(g){var v=M.groups[g];
+          return "<dt>"+g.replace(":","° · ")+" km · "+v.n_targets+"</dt><dd>"+v.n_inspectors+" S1 · "+fmt(v.dv_max,0)+" m/s</dd>";}).join("")+
+        '</dl></section>')
+       :('<section class="panel"><h2>Per group [EST]</h2><dl class="kv">'+
+        Object.keys(M.groups).sort().filter(function(g){return M.groups[g].n_targets>2;}).map(function(g){var v=M.groups[g];
+          return "<dt>"+g.replace(":","° · ")+" km · "+v.n_targets+"</dt><dd"+(v.n_dead_end?' class="hi"':"")+">"+v.n_inspectors+" S1"+(v.n_dead_end?" ("+v.n_dead_end+" dead)":"")+"</dd>";}).join("")+
+        '<dt>campaign</dt><dd>'+fmt(M.campaign_d,0)+' d</dd><dt>fleet Δv [EST]</dt><dd>'+Math.round(M.dv_total_ms/1000)+' km/s</dd></dl>'+
+        '<p class="warn" style="margin-top:6px">Sized by the planner, not flown.</p></section>'))
+    }[KIND];
+
+    /* Engine line.  While a burn is displayed: state, sign, thrust, this arc's duration, the dv of the
+       manoeuvre it belongs to (the recorder books a pass's dv on its first arc and 0 on the second, so
+       the arc's own booking is not shown), the recorded ignition mass, and what it serves.  Idle: the
+       thrust time accumulated so far against the mission time (the engine duty), measured from the
+       arcs themselves.  A state change repaints at once; the idle line refreshes at ~4 Hz. */
+    var engLast=-2,engAt=0;
+    function engine(T,bi){
+      var wt=now();
+      if(bi===engLast&&wt-engAt<250)return;
+      engLast=bi;engAt=wt;
+      var e1=el("engine"),e2=el("engine-sub");
+      if(!e1)return;
+      if(bi>=0){
+        var b=BURNS[bi],dur=(b.t1-b.t0)*86400,live=(T<=b.t1);
+        var sg=function(v){return (v<0?"−":"+")+Math.abs(v).toFixed(2);};
+        e1.className="eng on";
+        if(b.d){                         // tour: the arc's own recorded kind, RTN direction and dv
+          e1.textContent="THRUSTING  "+(BKINDS[b.k]||"arc")+"  R"+sg(b.d[0])+" T"+sg(b.d[1])+" N"+sg(b.d[2])+"  "+
+            fmt(BSTAT?BSTAT.thrust_N:0,2)+" N  "+(dur<6000?fmt(dur/60,1)+" min":fmt(dur/3600,1)+" h")+"  "+
+            fmt(b.dv,3)+" m/s  mass "+fmt(b.m,2)+" kg";
+          var arcsL=BURNS.filter(function(x){return x.i===b.i;}),ordL=arcsL.indexOf(b)+1,lg=(Mt.legs||[])[b.i];
+          e2.textContent=(live?"":"ended · ")+"arc "+ordL+" of "+arcsL.length+" in leg "+(b.i+1)+
+            (lg?" · "+lg.frm+" → "+lg.to:"")+" · hold in "+fmt(Math.max(0,TT[b.i]-T),2)+" d";
+        }else{                           // drifter: +/- along-track, the dv of the manoeuvre the arc belongs to
+          var mdv=b.hop?HOPS[b.i].dv:EV[b.i].dv;
+          e1.textContent="THRUSTING  "+(b.s>0?"+T":"−T")+"  "+fmt(BSTAT?BSTAT.thrust_N:0,2)+" N  "+
+            (dur<6000?fmt(dur/60,1)+" min":fmt(dur/3600,1)+" h")+"  "+fmt(mdv,2)+" m/s  mass "+fmt(b.m,2)+" kg";
+          var arcs=BURNS.filter(function(x){return x.hop===b.hop&&x.i===b.i;}),ord=arcs.indexOf(b)+1;
+          e2.textContent=(live?"":"ended · ")+"arc "+ord+" of "+arcs.length+
+            (b.hop?" for hop "+Math.round(HOPS[b.i].frm)+"→"+Math.round(HOPS[b.i].to)+" km"
+                  :" for NORAD "+EV[b.i].n+" · closest approach in "+fmt(Math.max(0,TT[b.i]-T),2)+" d");
+        }
+        if(el("eng-of"))el("eng-of").textContent=(bi+1)+" of "+BURNS.length;
+      }else{
+        var on=burnedBy(T),nx=BURNS.length?(T<BURNS[FB.BC].t0?BURNS[FB.BC]:BURNS[FB.BC+1]):null;
+        e1.className="eng";
+        e1.textContent="coasting"+(nx?"  ·  next burn in "+fmt(nx.t0-T,2)+" d":"");
+        e2.textContent="engine on "+(on<3600?Math.round(on/60)+" min":fmt(on/3600,1)+" h")+" of "+fmt(T,1)+
+          " d  ·  duty "+(T>0?fmt(100*on/(T*86400),2):"0.00")+" %"+
+          (BSTAT?" (run "+fmt(BSTAT.duty_pct,2)+" %"+(BSTAT.n_hop_arcs?", "+fmt(BSTAT.duty_incl_hops_pct,2)+" % incl. hops":"")+")":"");
+        if(el("eng-of"))el("eng-of").textContent=BURNS.length+" arcs";
+      }
+    }
+    function ledger(c){
+      var rows=[["arcs",c.arcs,LED.dv_nudge_ms,"var(--drift)"],
+                ["hops",c.hops,LED.dv_hop_ms,"var(--target)"],
+                ["drag EST",c.drag,LED.dv_drag_ms_EST,"var(--burn)"],
+                ["reserve",LED.dv_reserve_ms,LED.dv_reserve_ms,"var(--grey)"]];
+      if(!el("ledger"))return;
+      el("ledger").innerHTML=rows.map(function(r){
+        return '<div class="bar-row"><i>'+r[0]+'</i><div class="rail-track">'+
+          '<s style="background:'+r[3]+'"></s><u style="width:'+(100*r[1]/maxBar).toFixed(2)+
+          '%;background:'+r[3]+'"></u></div><em><b>'+r[1].toFixed(0)+'</b>/'+
+          r[2].toFixed(0)+'</em></div>';}).join("")+
+        '<div class="bar-row" style="grid-template-columns:1fr auto;margin-top:3px">'+
+        '<i>consumed</i><em><b>'+(c.arcs+c.hops+c.drag).toFixed(0)+'</b>/'+FINAL.toFixed(0)+
+        ' m/s</em></div>'+
+        '<div class="bar-row" style="grid-template-columns:1fr auto"><i>propellant</i><em><b>'+
+        c.prop.toFixed(2)+'</b>/'+FIN.prop.toFixed(2)+' kg</em></div>';
+      el("run-of").textContent=c.n+" of "+EV.length;
+    }
+
+    /* ---------------- selection text + inset ---------------- */
+    function vrelOf(e){
+      if(e.vrel)return e.vrel;
+      var d=[e.vi[0]-e.vt[0],e.vi[1]-e.vt[1],e.vi[2]-e.vt[2]];
+      return Math.sqrt(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
+    }
+    function paint(){
+      var e=EV[LIST[idx]];
+      if(!e)return;
+      lastPaint=now();
+      var v=vrelOf(e);
+      el("sel-of").textContent=(idx+1)+" / "+LIST.length;
+      var kv={
+        hybrid:[["NORAD",e.n],["closest approach",km(e.miss),1],["without the burn",fmt(e.nat,2)+" km"],
+                ["relative speed",fmt(v,2)+" km/s"],["arc Δv",e.free?"0 m/s (free pass)":fmt(e.dv,2)+" m/s"],
+                ["thrust time",e.free?"—":hm(e.burn)],["lead",e.lead===null||e.lead===undefined?"—":fmt(e.lead,1)+" d"],
+                ["platform altitude",fmt(e.alt,1)+" km"]],
+        survey:[["NORAD",e.n],["closest approach",km(e.miss),1],["S3 platform",shortName(e.who||"")],
+                ["relative speed",fmt(v,2)+" km/s"],["platform period",hm(e.per_i)],
+                ["platform altitude",fmt(e.alt,1)+" km"],["Δv","0 m/s"],
+                ["fleet median",M.miss_med+" km"]],
+        fleet:FLOWN?[["NORAD",e.n],["platform",e.who||""],["group",String(e.fam||"").replace(":","° · ")+" km"],
+               ["serve #",(e.leg||0)+" of "+((e.sat_serves||1)-1)+" legs"],
+               ["hold over one orbit",(e.hold?e.hold[0]+"–"+e.hold[1]:"start")+" m",1],
+               ["leg Δv flown / sized",e.leg?fmt(e.dv||0,1)+" / "+fmt(e.dv_sized||0,1)+" m/s":"—"],
+               ["  of which terminal",e.leg?fmt(e.dv_term||0,1)+" m/s":"—"],
+               ["leg time flown / sized",e.leg?fmt(e.T||0,1)+" / "+fmt(e.T_sized||0,1)+" d":"—"],
+               ["node gap",fmt(e.node_gap||0,2)+"°"],
+               ["platform Δv flown / sized",fmt(e.sat_dv||0,0)+" / "+fmt(e.sat_dv_sized||0,0)+" m/s"],
+               ["platform time flown / sized",fmt(e.sat_t||0,0)+" / "+fmt(e.sat_t_sized||0,0)+" d"],
+               ["mass after",fmt(e.mass||0,2)+" kg"],
+               ["drawn from",byId[e.who]?"recorded ephemeris":(catOf(e.who)?"catalogue state of its one target (no transfer flown)":"catalogue state")]]
+             :[["NORAD",e.n],["platform",e.who||""],["group",String(e.fam||"").replace(":","° · ")+" km"],
+               ["serve #",(e.leg||0)+" of "+(e.sat_serves||0)],["leg Δv sized",fmt(e.dv||0,1)+" m/s"],["leg time sized",fmt(e.T||0,1)+" d"],
+               ["node gap",fmt(e.node_gap||0,2)+"°"],["that platform's Δv",fmt(e.sat_dv||0,0)+" m/s"],["its campaign",fmt(e.sat_t||0,0)+" d"]],
+        tour:[["leg",(e.leg||0)+" of "+Mt.n_legs+" · "+(e.frm||"")+" → "+e.n],["hold over one orbit",(e.hold?e.hold[0]+"–"+e.hold[1]:"—")+" m",1],
+              ["leg Δv flown",fmt(e.dv||0,2)+" m/s"],["  transfer / terminal",fmt(e.dv_leg||0,2)+" / "+fmt(e.dv_term||0,2)],
+              ["leg Δv sized [EST]",fmt(e.dv_sized||0,2)+" m/s"],
+              ["leg time flown / sized",fmt(e.T||0,1)+" / "+fmt(e.T_sized||0,1)+" d"],
+              ["node / phase gap",fmt(e.node_gap||0,2)+"° / "+fmt(e.phase_gap||0,0)+"°"],
+              ["thrust arcs this leg",e.n_arcs||0],["re-anchor step at hand-over",fmt(e.reanchor_km||0,1)+" km"],
+              ["mass after",fmt(e.mass||0,2)+" kg"]]
+      }[MODE];
+      el("sel-kv").innerHTML=kv.map(function(r){
+        return "<dt>"+r[0]+"</dt><dd"+(r[2]?' class="hi"':"")+">"+r[1]+"</dd>";}).join("");
+      insetAt(CLK.T,true);
+      if(MODE==="hybrid"&&CUM[idx])ledger(CUM[idx]);
+      markTick();
+    }
+    /* ============ the encounter inset: ONE picture for all four tabs (PH 2026-09-30) ============
+       The platform in focus sits at the origin (orange); the target (blue) is drawn relative to it, with the
+       line of its relative motion, the closest-approach label and the distance scale bar.
+         fly-by  (survey S3, S2 drifter)  horizontal = the relative-velocity direction; the target crosses the
+                                          frame at v_rel, closest approach on the vertical through the platform
+         co-orbit (tour legs, fleet serves) horizontal = the target's along-track, vertical = radial; the line is
+                                          the RECORDED relative track over the encounter window (e.rel rows
+                                          [s from arrival, along, radial, cross] m, chaser − target: the target
+                                          seen from the platform is −rel); no rows = the hold-range middle
+       It shows the LAST encounter (idx) and is static outside its window: nothing is redrawn between encounters
+       (the SVG is byte-stable).  Inside a window it moves, at most every 100 ms of real time:
+         fly-by   |T − tca| ≤ halfKm / v_rel      target at v·(T − tca) along the line, closest approach fixed
+         co-orbit  T inside the e.rel span         target at the recorded relative position interpolated at T  */
+    var COORB=(MODE==="tour"||MODE==="fleet"),insetLiveOn=false,lastInset=0,relCur={relC:0};
+    function halfOf(e){return Math.max(COORB?0.05:0.62,e.miss*1.55);}       // frame half-width, km
+    function rowsOf(e){return (e.rel&&e.rel.length>1)?e.rel:null;}
+    function insetWin(j){                    // [t0,t1] mission days of event j's encounter window, or null
+      var e=EV[LIST[j]];if(!e)return null;var tc=TT[LIST[j]];
+      if(COORB){var rel=rowsOf(e);return rel?[tc+rel[0][0]/86400,tc+rel[rel.length-1][0]/86400]:null;}
+      var v=vrelOf(e);if(!(v>0))return null;var h=halfOf(e)/v/86400;return [tc-h,tc+h];
+    }
+    function inWin(j,T){var w=insetWin(j);return !!w&&T>=w[0]&&T<=w[1];}
+    function insetAt(T,force){               // every frame; force = the selection changed (paint)
+      if(idx<0)return;
+      var j=-1;
+      if(inWin(idx,T))j=idx;else if(idx+1<LIST.length&&inWin(idx+1,T))j=idx+1;   // the next one, while approaching
+      if(j>=0){var wt=now();if(force||wt-lastInset>100){lastInset=wt;insetDraw(j,T);}}
+      else if(force||insetLiveOn)insetDraw(idx,null);
+    }
+    function insetDraw(j,T){                 // T = null: static, at the encounter epoch
+      var e=EV[LIST[j]];if(!e)return;
+      var live=T!==null,tc=TT[LIST[j]],W=280,H=200,cx=W*0.5,cy=62,F='font-family="IBM Plex Mono, monospace"',s=[];
+      var miss=e.miss,v=vrelOf(e),halfKm=halfOf(e),S=46/halfKm,band=(MODE==="hybrid"),tx,ty,rng,when="";
+      insetLiveOn=live;
+      s.push('<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#070c16"/>');
+      s.push('<clipPath id="eclip"><rect x="0" y="0" width="'+W+'" height="118"/></clipPath>');
+      var circ=band?[0.2,0.4]:[Math.round(halfKm*0.4*100)/100,Math.round(halfKm*0.8*100)/100];
+      circ.forEach(function(r){
+        if(r*S>56)return;
+        s.push('<circle cx="'+cx+'" cy="'+cy+'" r="'+(r*S).toFixed(1)+'" fill="none" stroke="#2a3a57" stroke-dasharray="2 3"/>');
+        s.push('<text x="'+(cx+3)+'" y="'+(cy-r*S-3).toFixed(1)+'" fill="#5d6d8a" '+F+' font-size="8.5">'+km(r)+'</text>');
+      });
+      if(!COORB){
+        /* the line of relative motion, ticked at a round time step; the target rides it */
+        var ty0=cy-miss*S;
+        var dt=[0.005,0.01,0.02,0.05,0.1,0.2,0.5,1,2].filter(function(d){
+          return v*d>=halfKm*0.25&&v*d<=halfKm*0.55;})[0]||halfKm*0.4/Math.max(v,0.01);
+        for(var k=-3;k<=3;k++){
+          var qx=cx+k*v*dt*S;
+          if(k===0||qx<10||qx>W-10)continue;
+          s.push('<line x1="'+qx.toFixed(1)+'" y1="'+(ty0-3.5)+'" x2="'+qx.toFixed(1)+'" y2="'+(ty0+3.5)+'" stroke="#53d3ff" opacity=".65"/>');
+        }
+        s.push('<line x1="6" y1="'+ty0.toFixed(1)+'" x2="'+(W-14)+'" y2="'+ty0.toFixed(1)+'" stroke="#53d3ff" stroke-width="1.6"/>');
+        s.push('<path d="M'+(W-17)+' '+(ty0-4.5)+' L'+(W-5)+' '+ty0+' L'+(W-17)+' '+(ty0+4.5)+'Z" fill="#53d3ff"/>');
+        s.push('<line x1="'+cx+'" y1="'+cy+'" x2="'+cx+'" y2="'+ty0.toFixed(1)+'" stroke="#ffd447" stroke-dasharray="3 2"/>');
+        if(live)s.push('<circle cx="'+cx+'" cy="'+ty0.toFixed(1)+'" r="3.4" fill="none" stroke="#53d3ff"/>');   // closest approach stays
+        var dx=live?v*(T-tc)*86400:0;         // km along the line since TCA
+        tx=cx+dx*S;ty=ty0;rng=Math.hypot(miss,dx);
+        s.push('<text x="'+(cx+8)+'" y="'+((cy+ty0)/2+4).toFixed(1)+'" fill="#ffd447" '+F+' font-size="12">'+km(miss)+'</text>');
+        s.push('<text x="8" y="126" fill="#5d6d8a" '+F+' font-size="8.5">tick '+
+               (dt<1?(dt*1000).toFixed(0)+' ms':dt.toFixed(1)+' s')+' = '+km(v*dt)+'</text>');
+        if(live)when=(T<tc?"−":"+")+Math.abs((T-tc)*86400).toFixed(3)+" s";
+      }else{
+        var rel=rowsOf(e),RL=[0,0,0];
+        if(rel){
+          var d="";rel.forEach(function(p,q){d+=(q?" L":"M")+(cx-p[1]*S/1000).toFixed(1)+" "+(cy+p[2]*S/1000).toFixed(1);});
+          s.push('<path d="'+d+'" fill="none" stroke="#53d3ff" stroke-width="1.6" clip-path="url(#eclip)"/>');
+          relCur.relC=0;relAt(relCur,rel,live?(T-tc)*86400:0,RL);
+        }else{RL[0]=-(e.hold?0.5*(e.hold[0]+e.hold[1]):150);}          // no rows: the middle of the hold range, trailing
+        tx=cx-RL[0]*S/1000;ty=cy+RL[1]*S/1000;rng=Math.hypot(RL[0],RL[1],RL[2])/1000;
+        if(e.ca&&e.ca.rtn){                  // the leg's RECORDED closest approach: a fixed cross
+          var ax=cx-e.ca.rtn[1]*S/1000,ay=cy+e.ca.rtn[0]*S/1000;
+          if(ax>6&&ax<W-6&&ay>6&&ay<114)s.push('<path d="M'+(ax-4).toFixed(1)+' '+(ay-4).toFixed(1)+'L'+(ax+4).toFixed(1)+' '+(ay+4).toFixed(1)+'M'+(ax-4).toFixed(1)+' '+(ay+4).toFixed(1)+'L'+(ax+4).toFixed(1)+' '+(ay-4).toFixed(1)+'" stroke="#ffd447" stroke-width="1.4"/>');
+        }
+        s.push('<line x1="'+cx+'" y1="'+cy+'" x2="'+Math.max(8,Math.min(W-8,tx)).toFixed(1)+'" y2="'+Math.max(8,Math.min(114,ty)).toFixed(1)+'" stroke="#ffd447" stroke-dasharray="3 2"/>');
+        s.push('<text x="'+(cx+8)+'" y="'+(cy+26)+'" fill="#ffd447" '+F+' font-size="12">'+kmRange(rng*1000)+(rel?"":" · hold middle")+'</text>');
+        s.push('<text x="'+(W-8)+'" y="'+(cy-4)+'" text-anchor="end" fill="#5d6d8a" '+F+' font-size="8.5">along-track →</text>');
+        s.push('<text x="'+(cx+4)+'" y="11" fill="#5d6d8a" '+F+' font-size="8.5">radial ↑</text>');
+        s.push('<text x="8" y="126" fill="#5d6d8a" '+F+' font-size="8.5">'+(rel
+          ?'recorded '+(Mt.sample_s_terminal||60)+'-s rows · '+(rel[0][0]/3600).toFixed(1)+' h … +'+(rel[rel.length-1][0]/3600).toFixed(1)+' h from arrival'
+          :FLOWN?(e.hold?'recorded hold range '+e.hold[0]+'–'+e.hold[1]+' m · catalogue state, not the ephemeris':'route start: constructed 150 m behind the target')
+          :'[EST] planner\'s 150 m trailing hold · sized, not flown')+'</text>');
+        if(live)when=(T<tc?"−":"+")+tminus(Math.abs(T-tc)).slice(2)+" from arrival";
+      }
+      var px=Math.max(8,Math.min(W-8,tx)),py=Math.max(8,Math.min(114,ty));   // the target, held inside the frame
+      s.push('<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="3.4" fill="#53d3ff"/>');
+      s.push('<circle cx="'+cx+'" cy="'+cy+'" r="3.8" fill="#ff8a3d"/>');
+      s.push('<text x="8" y="'+(COORB?11:Math.max(11,ty-8)).toFixed(1)+'" fill="#53d3ff" '+F+' font-size="9.5">'+e.n+'</text>');
+      if(live)s.push('<text x="'+(W-8)+'" y="137" text-anchor="end" fill="#ffd447" '+F+' font-size="8.5">range '+kmRange(rng*1000)+' · '+when+'</text>');
+      /* the distance scale bar: log, with the closest approach (yellow) and the reference of the arm */
+      var bx0=18,bx1=262,by=164,lo=Math.log10(COORB?0.01:0.1),hi=Math.log10(COORB?1.2:12);
+      var LX=function(x){return bx0+(bx1-bx0)*(Math.log10(Math.max(Math.pow(10,lo),Math.min(Math.pow(10,hi),x)))-lo)/(hi-lo);};
+      if(band)s.push('<rect x="'+LX(0.2).toFixed(1)+'" y="'+(by-6)+'" width="'+(LX(0.4)-LX(0.2)).toFixed(1)+'" height="12" fill="#ffd447" opacity=".16"/>');
+      s.push('<line x1="'+bx0+'" y1="'+by+'" x2="'+bx1+'" y2="'+by+'" stroke="#2a3a57"/>');
+      (COORB?[[0.01,"10 m"],[0.03,"30"],[0.1,"100 m"],[0.3,"300"],[1,"1 km"]]:[[0.2,"200 m"],[0.4,"400"],[1,"1 km"],[3,"3"],[10,"10"]]).forEach(function(t){
+        s.push('<line x1="'+LX(t[0]).toFixed(1)+'" y1="'+(by-4)+'" x2="'+LX(t[0]).toFixed(1)+'" y2="'+(by+4)+'" stroke="#2a3a57"/>');
+        s.push('<text x="'+LX(t[0]).toFixed(1)+'" y="'+(by+15)+'" text-anchor="middle" fill="#5d6d8a" '+F+' font-size="8.5">'+t[1]+'</text>');
+      });
+      if(COORB){
+        if(KO!==null){
+          s.push('<circle cx="'+LX(KO/1000).toFixed(1)+'" cy="'+by+'" r="3.2" fill="none" stroke="#ff5a5a"/>');
+          s.push('<text x="'+bx0+'" y="'+(by-16)+'" fill="#6b7a95" '+F+' font-size="8.5">keep-out '+fmt(KO,0)+' m · closest approach '+kmRange(miss*1000)+'</text>');
+        }else s.push('<text x="'+bx0+'" y="'+(by-16)+'" fill="#6b7a95" '+F+' font-size="8.5">closest approach '+kmRange(miss*1000)+(MODE==="tour"?' · no keep-out on this flight':'')+'</text>');
+      }else if(band&&e.nat>e.miss*1.05){
+        s.push('<line x1="'+LX(e.nat).toFixed(1)+'" y1="'+(by-9)+'" x2="'+LX(e.miss).toFixed(1)+'" y2="'+(by-9)+'" stroke="#9dabc2" opacity=".55"/>');
+        s.push('<circle cx="'+LX(e.nat).toFixed(1)+'" cy="'+by+'" r="3.2" fill="none" stroke="#9dabc2"/>');
+        s.push('<text x="'+bx0+'" y="'+(by-16)+'" fill="#6b7a95" '+F+' font-size="8.5">without the burn '+e.nat.toFixed(2)+' km</text>');
+      }else{
+        s.push('<circle cx="'+LX(M.miss_med).toFixed(1)+'" cy="'+by+'" r="3.2" fill="none" stroke="#9dabc2"/>');
+        s.push('<text x="'+bx0+'" y="'+(by-16)+'" fill="#6b7a95" '+F+' font-size="8.5">fleet median '+M.miss_med+' km</text>');
+      }
+      s.push('<circle cx="'+LX(miss).toFixed(1)+'" cy="'+by+'" r="3.6" fill="#ffd447"/>');
+      el("enc").innerHTML=s.join("");
+      el("inset-cap").textContent="Encounter — inspector frame · "+(live?"live":"last");
+      if(COORB){
+        el("enc-l").textContent="hold "+(e.hold?e.hold[0]+"–"+e.hold[1]+" m":(MODE==="tour"||FLOWN)?"— (start, no range recorded)":"150 m [EST] sized");
+        el("enc-r").textContent="arrival "+String(e.utc).slice(0,16)+"Z";
+      }else{
+        el("enc-l").textContent=fmt(v,2)+" km/s relative";
+        el("enc-r").textContent=band
+          ?"<400 m for "+(2*Math.sqrt(Math.max(0,0.16-miss*miss))/v*1000).toFixed(0)+" ms"
+          :"<2 km for "+(miss<2?(2*Math.sqrt(4-miss*miss)/v).toFixed(1)+" s":"—");
+      }
+    }
+    /* ------------- timeline: also the scrub bar for the one clock ------------- */
+    function timeline(){
+      var W=1400,H=132,L=48,R=14,T0=14,B=24;
+      var SHOW=LIST.map(function(i){return {alt:EV[i].alt,t:TT[i]};});
+      var tMax=M.horizon_d;
+      var alts=SHOW.map(function(e){return e.alt;});
+      var TRK=(MODE==="tour"&&Dt.track)?Dt.track:null;
+      if(TRK)TRK.forEach(function(x){alts.push(x.el[0]-RE);});
+      var aMin=Math.min.apply(null,alts)-18,aMax=Math.max.apply(null,alts)+18;
+      var x=function(t){return L+(W-L-R)*Math.min(t,tMax)/tMax;};
+      var y=function(a){return T0+(H-T0-B)*(1-(a-aMin)/(aMax-aMin));};
+      var s=[];
+      [300,400,500,600,700,800].forEach(function(a){
+        if(a<aMin||a>aMax)return;
+        s.push('<line x1="'+L+'" y1="'+y(a)+'" x2="'+(W-R)+'" y2="'+y(a)+'" stroke="#16223a"/>');
+        s.push('<text x="'+(L-7)+'" y="'+(y(a)+4)+'" text-anchor="end" fill="#6b7a95" font-family="IBM Plex Mono, monospace" font-size="10.5">'+a+'</text>');
+      });
+      (tMax<400?[0,25,50,75,100,125,150,175,200,250,300,350]:[0,200,400,600,800,1000,1200,1400,1600,1800]).forEach(function(t){
+        if(t>tMax)return;
+        s.push('<text x="'+x(t)+'" y="'+(H-8)+'" text-anchor="middle" fill="#6b7a95" font-family="IBM Plex Mono, monospace" font-size="10.5">'+t+'</text>');
+      });
+      /* altitude hops (drifter): one dashed line each; labelled only while the labels still fit */
+      HOPS.forEach(function(h){
+        s.push('<line x1="'+x(h.t)+'" y1="'+T0+'" x2="'+x(h.t)+'" y2="'+(H-B)+'" stroke="#53d3ff" stroke-dasharray="3 3" opacity=".65"/>');
+        if(HOPS.length<=12)s.push('<text x="'+(x(h.t)+5)+'" y="'+(T0+11)+'" fill="#53d3ff" font-family="IBM Plex Mono, monospace" font-size="10">'+Math.round(h.frm)+'→'+Math.round(h.to)+' km</text>');
+      });
+      /* flown inspector: the recorded semi-major-axis altitude of every carried row, and each leg's departure */
+      if(TRK){
+        [320,340,360,380,420,440,460,480].forEach(function(a){
+          if(a<aMin||a>aMax)return;
+          s.push('<line x1="'+L+'" y1="'+y(a)+'" x2="'+(W-R)+'" y2="'+y(a)+'" stroke="#16223a"/>');
+          s.push('<text x="'+(L-7)+'" y="'+(y(a)+4)+'" text-anchor="end" fill="#6b7a95" font-family="IBM Plex Mono, monospace" font-size="10.5">'+a+'</text>');});
+        (Mt.legs||[]).forEach(function(g){
+          s.push('<line x1="'+x(g.t0).toFixed(1)+'" y1="'+T0+'" x2="'+x(g.t0).toFixed(1)+'" y2="'+(H-B)+'" stroke="#2a3a57" stroke-dasharray="2 3"/>');});
+        var dd="";TRK.forEach(function(p,k){dd+=(k?" L":"M")+x(p.t).toFixed(1)+" "+y(p.el[0]-RE).toFixed(1);});
+        s.push('<path d="'+dd+'" fill="none" stroke="#ff8a3d" stroke-width="1.3" opacity=".85"/>');
+      }
+      /* burn arcs: one thin mark per arc at its start, in a strip above the day axis; where burns are
+         dense the marks merge into a band, which is what the record says */
+      if(BURNS.length){
+        var yb0=H-B-8,yb1=H-B-1,dpath="";
+        BURNS.forEach(function(b){dpath+="M"+x(b.t0).toFixed(2)+" "+yb0+"V"+yb1;});
+        s.push('<path class="burns" d="'+dpath+'" stroke="#ffd447" stroke-width=".7" opacity=".8" fill="none"/>');
+      }
+      var stride=Math.max(1,Math.ceil(SHOW.length/1400));
+      for(var q=0;q<SHOW.length;q+=stride){
+        var e=SHOW[q];
+        s.push('<circle class="tick" data-i="'+q+'" cx="'+x(e.t).toFixed(1)+'" cy="'+y(e.alt).toFixed(1)+'" r="2.4" fill="#ff8a3d" opacity=".7"/>');
+      }
+      s.push('<text x="'+L+'" y="'+(T0+9)+'" fill="#4b5975" font-family="IBM Plex Mono, monospace" font-size="10">'+
+             (MODE==="fleet"?"platform altitude at each serve [km] (= the target's) vs mission day"
+              :TRK?"platform semi-major-axis altitude [km], as recorded, vs mission day · dashed = leg departure · dots = hold reached"
+              :"platform altitude [km] vs mission day")+
+             (HOPS.length?' · dashed = '+HOPS.length+' altitude hops':'')+
+             (BURNS.length?' · gold marks = '+BURNS.length+' burn arcs':'')+' — click to set the clock'+
+             (stride>1?'  ·  '+SHOW.length+' events, every '+stride+'th drawn':'')+'</text>');
+      s.push('<line id="tl-cursor" x1="'+L+'" y1="'+T0+'" x2="'+L+'" y2="'+(H-B)+
+             '" stroke="#ffd447" stroke-width="1.5"/>');
+      TLX=x;TLINV=function(px){return Math.max(0,Math.min(tMax,(px-L)/(W-L-R)*tMax));};
+      el("tl").innerHTML=s.join("");
+      el("tl").querySelectorAll(".tick").forEach(function(n){
+        n.addEventListener("click",function(){
+          idx=+n.dataset.i;anchor(TT[LIST[idx]]);paint();});});
+    }
+    function cursorAt(day){
+      if(!TLX||tab!=="tl")return;
+      var c=el("tl-cursor");
+      if(c){c.setAttribute("x1",TLX(day).toFixed(1));c.setAttribute("x2",TLX(day).toFixed(1));}
+    }
+    function markTick(){
+      if(tab!=="tl")return;
+      el("tl").querySelectorAll(".tick").forEach(function(n){
+        var on=(+n.dataset.i===idx);
+        n.setAttribute("r",on?4.5:2.4);
+        n.setAttribute("fill",on?"#ffd447":"#ff8a3d");
+        n.setAttribute("opacity",on?1:0.7);});
+    }
+    /* coverage accumulation (survey): every plotted point is a real (day, count) pair */
+    function coverage(){
+      var W=1400,H=132,L=52,R=112,T0=12,B=24,hor=M.horizon_d,tot=M.n_targets;
+      var keys=Object.keys(M.cov_curve).map(parseFloat).sort(function(a,b){return a-b;})
+                 .filter(function(k){return (M.cov_curve[String(k)]||[]).length;});
+      var x=function(d){return L+(W-L-R)*Math.min(d,hor)/hor;};
+      var y=function(c){return T0+(H-T0-B)*(1-c/tot);};
+      var s=[];
+      [0,0.5,1].forEach(function(f){
+        s.push('<line x1="'+L+'" y1="'+y(f*tot)+'" x2="'+(W-R)+'" y2="'+y(f*tot)+'" stroke="#16223a"/>');
+        s.push('<text x="'+(L-7)+'" y="'+(y(f*tot)+4)+'" text-anchor="end" fill="#6b7a95" font-family="IBM Plex Mono, monospace" font-size="10.5">'+Math.round(f*tot)+'</text>');
+      });
+      [0,365,730,1095,1460,1825].forEach(function(d){
+        s.push('<text x="'+x(d)+'" y="'+(H-8)+'" text-anchor="middle" fill="#6b7a95" font-family="IBM Plex Mono, monospace" font-size="10.5">'+d+'</text>');
+      });
+      keys.forEach(function(k,ki){
+        var pts=M.cov_curve[String(k)];
+        var t=ki/(keys.length-1||1);
+        var col="rgb("+Math.round(85+170*t)+","+Math.round(211-70*t)+","+Math.round(255-150*t)+")";
+        var d="M"+L+" "+y(0);
+        pts.forEach(function(p){d+=" L"+x(p[0]).toFixed(1)+" "+y(p[1]).toFixed(1);});
+        d+=" L"+x(hor).toFixed(1)+" "+y(pts[pts.length-1][1]).toFixed(1);
+        s.push('<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+(k===2?2.2:1.3)+
+                '" opacity="'+(k===2?1:0.8)+'"/>');
+        var last=pts[pts.length-1][1];
+        s.push('<text x="'+(W-R+7)+'" y="'+(y(last)+4).toFixed(1)+'" fill="'+col+
+                '" font-family="IBM Plex Mono, monospace" font-size="10">'+
+                (k<1?(k*1000).toFixed(0)+" m":k+" km")+" · "+last+"</text>");
+      });
+      s.push('<text x="'+L+'" y="'+(T0+8)+'" fill="#4b5975" font-family="IBM Plex Mono, monospace" font-size="10">targets first reached within each distance, of '+tot+
+             ' — over all '+M.n_encounters.toLocaleString()+' flown encounters</text>');
+      el("tl").innerHTML=s.join("");
+    }
+    el("tltabs").innerHTML=(MODE==="survey"&&M.cov_curve)
+      ?'<button data-tab="tl" aria-pressed="'+String(tab==="tl")+'">timeline</button>'+
+       '<button data-tab="cov" aria-pressed="'+String(tab==="cov")+'">coverage</button>':"";
+    el("tltabs").querySelectorAll("button").forEach(function(b){
+      b.onclick=function(){
+        tab=b.dataset.tab;SUBTAB=tab;
+        el("tltabs").querySelectorAll("button").forEach(function(o){
+          o.setAttribute("aria-pressed",String(o.dataset.tab===tab));});
+        if(tab==="tl"){timeline();markTick();}else coverage();
+      };});
+    el("tl").addEventListener("click",function(ev){
+      if(tab!=="tl"||!TLINV)return;
+      var n=el("tl"),r=n.getBoundingClientRect?n.getBoundingClientRect():null;
+      if(!r||!r.width)return;
+      anchor(Math.max(CLK.lo,Math.min(CLK.hi,TLINV((ev.clientX-r.left)/r.width*1400))));
+    });
+
+    CLK.lo=TT[LIST[0]];CLK.hi=TT[LIST[LIST.length-1]];
+    if(MODE==="tour"&&Dt.track&&Dt.track.length){       // the recorded track starts at departure, before the first hold
+      CLK.lo=Math.min(CLK.lo,Dt.track[0].t);CLK.hi=Math.max(CLK.hi,Dt.track[Dt.track.length-1].t);
+    }
+    /* with every platform drawn, the clock spans the S1-arm tracks too (they start at day 0, before the first
+       S3/S2 encounter); otherwise the clock is clamped to the arm's own events and the arm's early burns are unreachable */
+    if(WHO==="*")WINGB.forEach(function(b){var tr=b.P&&b.P.track;if(tr&&tr.length){CLK.lo=Math.min(CLK.lo,tr[0].t);CLK.hi=Math.max(CLK.hi,tr[tr.length-1].t);}});
+    if(tab==="tl")timeline();else coverage();
+    /* open on something happening: the inspector 30 s before its first burn, the drifter at its first pass;
+       a re-activation (flier change) keeps the clock where it stands */
+    if(X.keepT)anchor(Math.max(CLK.lo,Math.min(CLK.hi,CLK.T)));
+    else anchor((MODE==="tour"&&BURNS.length)?Math.max(CLK.lo,BURNS[0].t0-30/86400):CLK.lo);
+    idx=0;paint();
+    if(CTX){var P0=pairState(CLK.T,0);instruments(CLK.T,0,P0);eventStrip(CLK.T);}
+    if(SKY&&!SKY.framedOnce){
+      SKY.framedOnce=true;
+      SKY.frame(new THREE.Vector3(EV[0].ri[0]/U,EV[0].ri[2]/U,-EV[0].ri[1]/U),24);
+    }
+    if(reduce){CLK.playing=false;el("b-play").textContent="Play";
+               el("b-play").setAttribute("aria-pressed","false");}
+
+    /* provenance: run dir, fleet sha12, catalogue sha12, code commit, keep-out radius, recorded vs
+       interpolated -- every number read from a payload meta, the wing sentence when a wing is present,
+       and the focused inspector's own record when one is selected */
+    var NP=M.npz_provenance||{},NSP=(NP&&NP.source_provenance)||{};
+    var tourProv=(MODE==="tour")?(" PLATFORM IN FOCUS: [FLOWN] recorded Orekit ephemeris ("+(Mt.sample_s_leg||600)+" s on the leg / "+(Mt.sample_s_terminal||60)+" s in the terminal "+
+        "stage) and finite-thrust arcs of platform "+(Mt.inspector||"")+(FB.cls==="wing"?" (S1 arm)":"")+", run "+(Mt.run||"")+", archive sha256 "+(Mt.archive?Mt.archive.sha256:"—")+
+        " ("+(Mt.archive?Mt.archive.n_legs:Mt.n_legs)+" leg files, manifest "+(Mt.archive?Mt.archive.manifest:"—")+"), flights stamped commit "+
+        String(Mt.git||"").slice(0,10)+", catalogue sha12 "+(Mt.catalogue||"")+", sized tour "+(Mt.sized_tour||"")+" (sha "+(Mt.sized_tour_sha||"")+
+        "), keep-out radius "+koText(KO)+(Mt.n_legs_with_keepout!==undefined?" ("+Mt.n_legs_with_keepout+" of "+Mt.n_legs+" legs record one)":"")+
+        (Mt.dev?" -- DEV payload, a pre-keep-out flight, not for shipping":"")+
+        (STUCK?". "+STUCK.line:"")+
+        ". "+Mt.n_legs+" of "+Mt.n_legs_sized+" legs flown, "+fmt(Mt.dv_total_ms,1)+" m/s (the sizer's [EST] "+fmt(Mt.dv_sized_ms,1)+
+        "), "+fmt(Mt.t_total_d,1)+" d of cumulative cadence (the last hold reached at "+fmt(Mt.last_hold_d||0,1)+" d), MAX leg "+
+        fmt(Mt.dv_worst_ms,1)+" m/s. The track is the flight's own recorded rows ("+(Mt.n_track||0)+" of them: one per "+
+        ((Mt.stride_s||0)/3600)+" h of drift, the row at each hold, and the first recorded row inside every thrust arc), rotated "+
+        "EME2000 to TEME by Orekit and otherwise untouched; the leg-boundary re-anchor step is real -- at each hand-over the "+
+        "platform is re-anchored on the catalogue state of the target it has just served (the Orekit copy of a target drifts "+
+        "from ref-SGP4 over a long leg; memory tour-leg-boundary-reanchor), so the track has a recorded step of the size shown "+
+        "in the rail; a leg's rows are carried up to the next departure only (the recorder keeps sampling the un-re-anchored "+
+        "chaser past it as a drift check, which is not the flown path). "+(BSTAT?"The burns are the flight's own "+BSTAT.n_arcs+" recorded finite-thrust arcs (start, end, "+
+        "direction, propellant-derived Δv; "+BSTAT.n_terminal_arcs+" of them terminal-stage): the platform flies its recorded track through each one and its "+
+        "marker is lit red while the clock is inside it -- a recorded state at each "+
+        "arc's first row, the page's interpolation between rows ("+BSTAT.n_arcs_without_recorded_row+" arcs are shorter than the "+
+        "sample step and hold no row); the sum of the arcs' Δv equals the flight's cumulative Δv ("+fmt(BSTAT.dv_sum_mps,1)+" m/s); the "+
+        "red marker encodes ON only (constant "+fmt(BSTAT.thrust_N,2)+" N; direction and Δv are in the events strip and the rail) and it is "+
+        "held for 0.35 s of real time after an arc ends. Arc durations "+fmt(BSTAT.dur_min_s,2)+" s – "+fmt(BSTAT.dur_max_s/60,0)+" min "+
+        "(median "+fmt(BSTAT.dur_med_s/60,0)+" min), engine on "+fmt(BSTAT.burn_total_s/3600,0)+" h = duty "+fmt(BSTAT.duty_pct,2)+" %. "+
+        "The mass shown at ignition is the chaser mass of the last recorded row at or before it. ":"")+
+        (CTX?"Burn context: the leg's target is drawn through the whole leg with its orbit ring and marker from ITS recorded "+
+        "ephemeris rows ("+(Mt.n_tgt_rows||0)+" target rows: the seed state at departure, the same stride as the platform, the row at "+
+        "the hold; the ring switches target at each leg boundary); the platform's own ring is its displayed osculating orbit, and "+
+        "the flown path from the clock to the hold is sampled through the same display function that places the body. ":"")+
+        "Through each leg's terminal stage, hold and dwell (hand-off to the next departure) the platform is placed at the "+
+        "target's displayed position plus the RECORDED chaser−target offset (the flight's own 60-s rows within one revolution "+
+        "of arrival, every 300 s elsewhere -- thinned rows interpolate the "+
+        "recorded 60-s offset to within 200 m far from the hold, exactly at the rows), rotated with the target's displayed RTN "+
+        "triad -- so the two bodies are the recorded 150 m apart at the hold instead of drifting apart between rows (gate: "+
+        "check_display, on-screen vs recorded distance at every recorded row of every platform). The instruments and the relative-motion inset "+
+        "are LIVE from those states; the closest approach shown as recorded is the leg's terminal-stage minimum from "+
+        "closest_approach.json where its instant lies inside the flown window, else the minimum of the recorded rows "+
+        "themselves (for a few legs the json's minimum falls in the recorder's post-departure drift-check rows, which are not flown). "+
+        "Sized numbers are the planner's [EST]. J2-only Orekit Cowell, finite thrust; no drag."):"";
+    var recNote=(REC.length?" "+REC.length+" S1 platform"+(REC.length>1?"s are":" is")+" drawn from recorded ephemeris rows and recorded thrust arcs (per-platform tour payloads: "+
+        REC.map(function(b){return b.who+(b.P.meta.dev?" [DEV]":"");}).join(", ")+"), each placed at its target + RECORDED offset through every hold window and showing its arrow inside each recorded arc; "+
+        "between recorded rows the page interpolates as described below.":"")+
+        (NOREC.length?" "+NOREC.length+" S1 platform"+(NOREC.length>1?"s have":" has")+" no per-platform payload and "+(NOREC.length>1?"are":"is")+" drawn at the catalogue state of the target at each serve ("+
+        NOREC.map(function(b){return b.who;}).join(", ")+").":"");
+    self.prov={
+      hybrid:"[FLOWN] ONE S2 platform, run "+(M.run||"")+" ("+(M.seed_tag||"")+"), commit "+String(M.git||"").slice(0,7)+
+        ", catalogue sha12 "+(M.catalogue||"")+", fleet file: none (a single S2 platform, seed "+(M.seed_tag||"")+"); keep-out radius: not applicable to a fly-by S2 platform (its band is "+(M.band?M.band.join("–"):"")+" km)"+
+        ", caps "+(M.caps_lifted?"LIFTED (diagnostic run)":"NOT lifted ("+fmt(LED.dv_budget_ms,0)+" m/s, "+fmt(LED.t_cap_d,0)+" d)")+
+        ". Served "+M.n_served+" of "+M.n_targets+" tagged targets ("+(M.tagged_list||"")+") in "+fmt(LED.t_used_d,1)+
+        " d; "+M.n_unreachable+" unreachable"+(M.unreachable.length?" (NORAD "+M.unreachable.join(", ")+")":"")+
+        ". Δv ledger "+fmt(LED.dv_total_ms,1)+" of "+fmt(LED.dv_budget_ms,0)+" m/s = burns "+fmt(LED.dv_nudge_ms,1)+
+        " ("+LED.n_nudges+" burns, max "+fmt(LED.max_nudge_ms,1)+" m/s) + hops "+fmt(LED.dv_hop_ms,1)+" ("+LED.n_hops+
+        " hops) + drag make-up "+fmt(LED.dv_drag_ms_EST,1)+" [EST, drag-off flight + estimated make-up line] + reserve "+
+        fmt(LED.dv_reserve_ms,0)+". Flown miss min / median / max "+M.miss_min+" / "+M.miss_med+" / "+M.miss_max+
+        " km (aim "+M.aim+" km, band "+(M.band?M.band.join("–"):"")+" km). Every position, velocity and closest approach is "+
+        "the recorder's own measurement at the flown time of closest approach; the mission clock between two passes is "+
+        "interpolated from the bracketing flown states as described below. "+
+        (M.burn_stats?"The burn arcs are the recorder's own finite-thrust arcs — start, end, direction and propellant of each of the "+
+        M.burn_stats.n_arcs+" burn arcs ("+M.burn_stats.n_passes_with_arcs+" passes, "+M.burn_stats.n_free+" free) and "+M.burn_stats.n_hop_arcs+
+        " hop arcs, at the constant "+fmt(M.burn_stats.thrust_N,2)+" N — and the platform's marker is lit red while the clock is inside one "+
+        "(the direction is ± along-track by construction of the two-tangential-arc solver, the only direction the recorder logs; the "+
+        "rail shows the sign and the arc's Δv); the red is held for 0.35 s of real time after the arc ends so a short arc "+
+        "stays visible at fast clock rates. Arc durations "+fmt(M.burn_stats.dur_min_s/60,1)+"–"+fmt(M.burn_stats.dur_max_s/60,0)+" min (median "+
+        fmt(M.burn_stats.dur_med_s/60,0)+"), engine on "+fmt(M.burn_stats.burn_total_s/3600,0)+" h of "+fmt(LED.t_used_d,1)+" d = duty "+
+        fmt(M.burn_stats.duty_pct,2)+" % ("+fmt(M.burn_stats.duty_incl_hops_pct,2)+" % with the hop arcs), measured from the arcs; their Δv sums "+
+        "to the burn ledger exactly ("+fmt(M.burn_stats.dv_sum_mps,1)+" m/s). Two recorder conventions are shown as recorded: a pass's Δv is "+
+        "booked on its first arc (the second logs 0 m/s but its own propellant), so the rail quotes the burn's Δv, not the arc's; "+
+        "and the ignition mass restarts at the platform mass every leg, so it is not the cumulative vehicle mass (the running total is). "+
+        "Arcs before the first flown pass or after the last one lie outside the clock's span and are not drawn. ":"")+
+        (MODE==="hybrid"&&CTX?"Burn context: the NEXT pass's target is drawn with its orbit ring and marker; the S2 platform's payload holds no target "+
+        "state away from the pass, so between passes that ring is the constellation layer's fitted mean orbit of the satellite "+
+        "(six numbers per satellite, gated against ref-SGP4: median "+(CAT&&CAT.meta.gate_km?CAT.meta.gate_km["1825.0"][0]:"—")+
+        " km at day 1825) and inside the encounter window the FLOWN state at the pass takes over; the S2 platform's own ring is its "+
+        "displayed osculating orbit (not drawn), and its flown path is sampled through the same display "+
+        "function that places the body, from the clock to the next pass. The instruments and the relative-motion inset are live "+
+        "from the displayed states (between passes the target is the catalogue fit, so a live range there carries that fit's "+
+        "error); the closest approach shown as recorded is the pass's flown miss at TCA. ":"")+
+        "Each pass sits on the clock at its FLOWN time of closest approach (the record's "+
+        "tca_utc); the record also carries the leg's PLANNED arrival time, which differs from the flown one by up to "+
+        fmt(M.tca_slip_max_s||0,1)+" s in this run and is not used. Retired: "+(M.retire_reason||"")+". "+wingSentence+tourProv,
+      survey:"[FLOWN] Each encounter is one satellite's closest approach of the whole mission, taken from the "+
+        "flown record "+(M.source_npz||M.run)+" (sha12 "+(M.source_sha12||"—")+"; "+M.n_drifters+" S3 platforms, all at 53.16°: "+M.drifters.join(", ")+"); "+
+        (M.derivation?"derivation: "+M.derivation+"; ":"")+
+        "source run "+(NSP.run_dir||"—")+", run commit "+String(NSP.run_git_commit||"").slice(0,10)+", fleet (seed) file sha12 "+String(NP.subset_seed_sha256||NSP.fleet_sha256||"").slice(0,12)+
+        (NP.subset_seed_file?" ("+NP.subset_seed_file+")":"")+", catalogue sha12 "+(M.catalogue||"")+"; keep-out radius: not applicable to passive S3 platforms (no rendezvous, closest approaches are whatever the geometry gave). "+
+        M.n_shown+" targets reached of the catalogue, "+M.n_encounters.toLocaleString()+" flown encounters in all. This arm spends no Δv. "+wingSentence+tourProv,
+      fleet:(FLOWN?("[FLOWN epochs and dv; serve positions = catalogue state at the serve] "+
+        M.n_sats+" S1 platforms, "+M.n_targets+" targets, flown "+M.n_flown+"/"+M.n_sats+(ANYSTUCK?", "+M.n_stuck+" stuck":"")+"; run "+(M.run||"")+", fleet file sha12 "+
+        (M.fleet_sha12||"")+", flights stamped commit(s) "+(M.git||"")+", catalogue sha12 "+(M.catalogue||"")+"; keep-out radius "+koText(M.keepout_m)+
+        (M.keepout_m===null?" (these flights predate the keep-out)":"")+". Each serve is drawn at the flown arrival "+
+        "epoch (leg departure + flown leg time, i.e. arrival at the hold), with the platform co-located with the target's "+
+        "ref-SGP4 catalogue state at that instant -- that is what a serve is."+recNote+" Cumulative Δv is the sum of the flown per-leg totals (transfer arcs + trims + terminal). MAX platform "+
+        "Δv "+fmt(M.max_dv_ms,1)+" m/s ("+(M.max_dv_inspector||"")+"), MAX platform time "+fmt(M.max_t_d,1)+" d incl. the "+
+        "final one-revolution dwell ("+(M.max_t_inspector||"")+"; last hold reached at "+fmt(M.last_arrival_d,1)+" d), fleet Δv "+
+        fmt(M.dv_total_ms/1000,1)+" km/s; the sizer's [EST] were MAX "+fmt(M.sized_max_dv_ms,0)+" m/s, campaign "+
+        fmt(M.sized_campaign_d,0)+" d, fleet "+fmt(M.sized_dv_total_ms/1000,1)+" km/s. Terminal-stage closest approaches on "+
+        "these flights were "+(TERM?fmt(TERM.min_m,1)+"–"+fmt(TERM.max_m,0)+" m (median "+fmt(TERM.med_m,0)+" m; "+
+        TERM.n_inside_100m+" of "+TERM.n_legs+" legs came inside 100 m, "+TERM.n_inside_10m+" inside 10 m)":"not recorded")+". "+
+        "The flights are J2-only Orekit Cowell with finite thrust."+reanchorSentence(M.reanchor,"platform"))
+       :("SIZED, NOT FLOWN. Every serve is the planner's [EST] arrival at that target, drawn with the platform "+
+        "co-located with the target's ref-SGP4 catalogue state at the sized epoch. Run "+(M.run||"")+", fleet file sha12 "+(M.fleet_sha12||"")+", catalogue sha12 "+(M.catalogue||"—")+"; keep-out radius: none (nothing flown)."+recNote))+tourProv
+    }[KIND]+
+      " ONE mission clock drives this page and everything drawn is a function of it alone. Each body "+
+      "carries the six osculating elements Orekit derived from each of its flown states and that "+
+      "orbit's Keplerian period; between two flown states the elements are interpolated and the true "+
+      "argument of latitude is carried forward from the earlier state at its own Keplerian rate and back "+
+      "from the later one at its own, so the track is exact at every flown state and continuous "+
+      "across every boundary"+
+      (M.ring_gate_m!==undefined?" (the ellipse redrawn from those elements agrees with Orekit's own "+
+      "sampling of the same orbit to "+(M.ring_gate_m*1000).toFixed(2)+" mm)":"")+
+      ". The Earth's spin is ONE line least-squares fitted to Orekit's prime-meridian direction over "+
+      "the whole mission"+(CAT&&CAT.meta.spin_gate_deg!==undefined?
+      ", within "+CAT.meta.spin_gate_deg.toFixed(4)+"° of Orekit everywhere":"")+
+      " and within "+SPINERR.toFixed(3)+"° of the angle Orekit recorded at every flown state of this arm — that "+
+      "residual is the second-resolution rounding of the recorded epochs, not the fit"+
+      ", so no rotation is ever skipped or repeated; the Sun "+
+      "direction is Orekit's, sampled daily. A body's trail is the arc it sweeps in the last 0.35 s "+
+      "of real time, which is why it lengthens with the clock rate. Once the clock would turn the Earth "+
+      "more than a full revolution per second of real time the spin is aliasing rather than motion, "+
+      "so above that rate it is HELD at the orientation it had when the rate was raised and the "+
+      "header says so; the Sun keeps its real direction and nothing else is frozen."+
+      (CAT?" The constellation layer places all "+CAT.meta.n+" catalogue satellites from six numbers "+
+      "each, least-squares fitted to the reference SGP4 trajectory; against that same propagator the "+
+      "drawn position is out by a median "+CAT.meta.gate_km["1825.0"][0]+" km at mission end (worst "+
+      CAT.meta.gate_km["1825.0"][2]+" km). A satellite turns warm at the instant this arm inspects "+
+      "it.":"")+" Mission day → UTC is exact to the 8.6 s the recorded epochs are rounded to.";
+    return self;
+  }
+
+  /* ============================== tabs ============================== */
+  function setLoad(txt,err){var n=el("loadline");if(!n)return;n.textContent=txt||"";n.className="loadline"+(err?" err":"");}
+  function activate(k,who,keepT,carried){
+    var D=DATA[k];
+    if(!D)return;
+    who=who||"";
+    /* a selection the user made is remembered; one CARRIED into a tab by switchTab is not (a fleet tab renders the
+       "*" mode as "" without forgetting it) */
+    if(!carried){if(who===""||who==="*"){SEL.mode=who;SEL.who=null;}else SEL.who=who;}
+    try{
+      el("arms").querySelectorAll("button").forEach(function(b){
+        b.setAttribute("aria-pressed",String(b.dataset.arm===k));});
+      CUR=null;
+      var A=buildArm(D,{tab:k,who:who||"",insp:INSP[k]||[],wing:WING[k]||null,keepT:!!keepT});
+      CUR=A;
+      var m=A.meta,man=MAN||{};
+      el("prov").innerHTML="<b>"+(m.tag||"")+"</b> · run "+(m.run||"—")+
+        (m.git?" · commit "+(String(m.git).indexOf(" ")<0?String(m.git).slice(0,10):String(m.git)):"")+
+        (m.catalogue?" · catalogue sha12 "+m.catalogue:"")+
+        (man.code_commit?" · page code commit "+String(man.code_commit).slice(0,10):"")+
+        (man.built_utc?" · built "+man.built_utc:"")+" — "+A.prov+
+        " Imagery: NASA Blue Marble and Earth at Night, public domain.";
+    }catch(err){
+      el("title").textContent="This view failed to draw";
+      el("eyebrow").textContent=String(err&&err.message||err);
+      throw err;
+    }
+  }
+  /* the selection carried into tab k: the platform chosen by name if that tab has it (several S1 platforms fly in
+     more than one fleet), else the carried MODE -- "*" only where the tab has an S1 arm to show (a fleet tab's
+     "all platforms" is ""); the mode itself is kept, so it comes back on the next tab that has it */
+  function carryWho(k){
+    var D=DATA[k];if(!D)return "";
+    var ins=INSP[k]||[],w=SEL.who;
+    if(w&&(ins.some(function(P){return P.meta.inspector===w;})||D.events.some(function(e){return (e.who||"")===w;})))return w;
+    var m=SEL.mode||"";
+    if(m==="*"&&!(TAB[k]&&TAB[k].wing&&ins.length))m="";
+    return m;
+  }
+  function switchTab(k){activate(k,carryWho(k),true,true);}
+  /* fetch one JSON file; a failure is reported (header line + console), never swallowed */
+  var FAILED=[];
+  function getJSON(url){
+    return fetch(url).then(function(r){
+      if(!r.ok)throw new Error("HTTP "+r.status+" for "+url);
+      return r.json();
+    }).catch(function(err){FAILED.push(url+": "+err.message);throw err;});
+  }
+  /* a tab's files are fetched the first time it is activated: the arm payload, the wing's fleet-level
+     file and every per-inspector tour payload, in parallel, with a progress line in the header; the
+     tab's button is disabled while its arm payload is still on its way */
+  function loadTab(k){
+    var t=TAB[k]; if(!t)return Promise.reject(new Error("no tab "+k));
+    if(LOADED[k])return LOADED[k];
+    var files=[{id:"p-"+k,url:t.arm,role:"arm"}];
+    var W=t.wing||null;
+    if(W&&W.fleet)files.push({id:"p-"+k+"-wing",url:W.fleet,role:"wing"});
+    var insp=(t.inspectors||(W&&W.inspectors)||[]);
+    insp.forEach(function(s,i){files.push({id:"p-"+k+"-insp-"+i,url:s.file,role:"insp",spec:s});});
+    var done=0,total=files.length,bt=el("arms").querySelector('button[data-arm="'+k+'"]');   /* NodeList has no .find in a browser */
+    if(bt)bt.disabled=true;
+    setLoad("loading "+t.label+": 0 / "+total+" files");
+    LOADED[k]=Promise.all(files.map(function(f){
+      return getJSON(f.url).then(function(obj){
+        if(f.role==="insp"){
+          if(!obj||!obj.meta||obj.meta.kind!=="tour")throw new Error(f.url+" is not a tour payload (meta.kind "+(obj&&obj.meta&&obj.meta.kind)+")");
+          if(f.spec.id&&obj.meta.inspector!==f.spec.id)throw new Error(f.url+": meta.inspector "+obj.meta.inspector+" != manifest id "+f.spec.id);
+          obj.meta.dev=!!f.spec.dev; obj.meta.file=f.url;
+          if(f.spec.keepout_m!==undefined&&(obj.meta.keepout_m===undefined||obj.meta.keepout_m===null))obj.meta.keepout_m=f.spec.keepout_m;
+        }
+        feed(f.id,obj); done++;
+        if(f.role==="arm"&&bt)bt.disabled=false;
+        setLoad("loading "+t.label+": "+done+" / "+total+" files");
+        return obj;
+      });
+    })).then(function(){
+      DATA[k]=load("p-"+k);
+      INSP[k]=insp.map(function(_,i){return load("p-"+k+"-insp-"+i);}).filter(function(P){return !!P;});
+      WING[k]=W?{meta:(W.fleet?(load("p-"+k+"-wing")||{}).meta:null)||null,events:(W.fleet&&(load("p-"+k+"-wing")||{}).events)||[],spec:W}:null;
+      if(WING[k]&&WING[k].meta&&W.case&&!WING[k].meta.case)WING[k].meta.case=W.case;
+      if(!DATA[k])throw new Error("arm payload missing for "+k);
+      setLoad(FAILED.length?FAILED.length+" file(s) failed: "+FAILED.join("; "):"",FAILED.length>0);
+      if(bt)bt.disabled=false;
+    }).catch(function(err){
+      LOADED[k]=null;
+      setLoad("FAILED to load "+t.label+": "+err.message,true);
+      if(bt)bt.disabled=false;
+      throw err;
+    });
+    return LOADED[k];
+  }
+  function menu(){
+    el("arms").innerHTML=TABS.map(function(t){
+      return '<button data-arm="'+t.id+'" aria-pressed="false">'+t.label+'</button>';}).join("");
+    el("arms").querySelectorAll("button").forEach(function(b){
+      b.onclick=function(){var k=b.dataset.arm;return loadTab(k).then(function(){switchTab(k);});};});
+  }
+  function boot(){
+    return getJSON("manifest.json").then(function(man){
+      MAN=man; TABS=man.tabs||[]; TABS.forEach(function(t){TAB[t.id]=t;});
+      if(man.dev){var d=el("devtag");if(d){d.hidden=false;d.textContent=man.dev_note||"DEV DATA";}}
+      return getJSON(man.catalogue).then(function(c){setCat(c);feed("p-cat",c);},function(){setCat(null);});
+    }).then(function(){
+      menu();
+      if(typeof THREE==="undefined"){el("c-day").textContent="—";el("c-sub").textContent="3-D view unavailable";}
+      if(!TABS.length){el("title").textContent="No tabs in the manifest";return;}
+      return loadTab(TABS[0].id).then(function(){activate(TABS[0].id);});
+    }).catch(function(err){
+      setLoad("FAILED: "+err.message,true);
+      el("title").textContent="The atlas could not load";
+      el("eyebrow").textContent=String(err&&err.message||err);
+      throw err;
+    });
+  }
+  var READY=boot();
+
+  /* Test hook: `module` does not exist in the browser, so this is inert there. It lets
+     check_display.js gate THE PAGE'S OWN display function -- not a copy of it -- against the
+     flown states and for continuity across every encounter boundary, and check_atlas.js drive
+     the page's own frames. */
+  if(typeof module!=="undefined"&&module.exports)
+    module.exports={track:track,stateAt:stateAt,basis:basis,atNu:atNu,RK:RK,
+                    tOf:tOf,spinAt:function(T){return SPIN0+SPINR*T;},sunAt:sunAt,DATA:DATA,INSP:INSP,WING:WING,
+                    cat:function(){return CAT;},man:function(){return MAN;},tabs:function(){return TABS;},
+                    anchor:anchor,CLK:CLK,sky:function(){return SKY;},activate:activate,loadTab:loadTab,switchTab:switchTab,carryWho:carryWho,
+                    sel:function(){return {mode:SEL.mode,who:SEL.who,showCat:SHOWCAT,subtab:SUBTAB};},
+                    cur:function(){return CUR;},ready:READY,feed:feed,load:load,failed:FAILED};
+})();
+</script>

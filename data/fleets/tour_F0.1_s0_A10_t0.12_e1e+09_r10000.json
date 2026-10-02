@@ -1,0 +1,53 @@
+{
+ "campaign_d": 130.26282572336177,
+ "dv_max": 181.57923599660975,
+ "groups": {
+  "43:484": {
+   "campaign_d": 130.26282572336177,
+   "dv_leg_max": 181.57923599660975,
+   "dv_max": 181.57923599660975,
+   "lam": 8.0,
+   "m_max": 80,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 2,
+   "sweep": [
+    {
+     "campaign_d": 134.2757561730078,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 130.26282572336177,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 120.0
+  }
+ },
+ "inspectors": [
+  {
+   "group": "43:484",
+   "id": "43_484_lam8_i00",
+   "lam": 8.0,
+   "m_max": 80,
+   "n_legs": 1,
+   "n_targets": 2,
+   "sha12": "47d946367822",
+   "sized_dv": 181.57923599660975,
+   "sized_t_d": 130.26282572336177,
+   "stop": "all served",
+   "t_leg_max_d": 120.0,
+   "tour": "ep_tour/validate/fleets/tour_F0.1_s0_A10_t0.12_e1e+09_r10000/43_484_lam8_i00.json"
+  }
+ ],
+ "n_dead_end": 0,
+ "n_inspectors": 1,
+ "n_single": 0,
+ "n_targets": 2,
+ "name": "tour_F0.1_s0_A10_t0.12_e1e+09_r10000",
+ "run": "artifacts/tour_fleet/tour_F0.1_s0_A10_t0.12_e1e+09_r10000/base",
+ "sha12": "7f9faef4360d",
+ "tag": "[EST] ep_tour.fleet sizing; drag NOT priced; dwell 1 rev; chosen = fewest inspectors then shortest campaign"
+}

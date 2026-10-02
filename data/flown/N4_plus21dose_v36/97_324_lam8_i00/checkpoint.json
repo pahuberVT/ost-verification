@@ -1,0 +1,114 @@
+{
+ "sized_tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/97_324_lam8_i00.json",
+ "sized_tour_sha256": "3049362bda3738b5d9a83f3e4f3a4390fe9c54663468b6db94b85f06f0d03aa3",
+ "lam_mps_per_day": 8.0,
+ "order": [
+  67893,
+  67892
+ ],
+ "n_legs": 1,
+ "next_leg": 1,
+ "t_dep_s": 296953.5911550262,
+ "chaser": {
+  "r_m": [
+   5636726.795365513,
+   1780146.8142408347,
+   3163126.0421800185
+  ],
+  "v_ms": [
+   -3107.235060789109,
+   -2152.8630231820093,
+   6723.156998279225
+  ],
+  "mass_kg": 299.48366274545646
+ },
+ "start_construction": "target 67893 ref-sgp4 state at t=0, displaced 150.0 m along -T (RTN along-track), velocity unchanged",
+ "cum": {
+  "dv_mps": 25.339506165344908,
+  "cadence_s": 296953.5911550262,
+  "sized_T_s": 316945.62556643685
+ },
+ "legs": [
+  {
+   "leg": 0,
+   "frm": 67893,
+   "to": 67892,
+   "t_dep_s": 0.0,
+   "t_dep_d": 0.0,
+   "target_seed_utc": "2026-03-25T21:25:17.146830260753631584Z",
+   "sized_dv_leg_mps": 22.518955330337583,
+   "sized_dv_serve_mps": 26.718955330337582,
+   "sized_T_d": 3.668352147759686,
+   "sized_T_leg_d": 2.568352147759686,
+   "sized_node_gap_deg": 0.009560844599745945,
+   "sized_da_d_km": -12.292226303950883,
+   "replan_est_dv_mps": 22.475651332533705,
+   "replan_est_T_d": 2.5385263234624182,
+   "flown_dv_leg_mps": 23.94262254480747,
+   "flown_dv_arc1_mps": 14.090934345293501,
+   "flown_dv_trims_mps": 1.6297118599896687,
+   "flown_dv_arc2_mps": 8.221976339524492,
+   "flown_dv_terminal_mps": 1.3968836205392114,
+   "flown_dv_total_mps": 25.339506165344908,
+   "flown_T_leg_d": 2.4241920831686885,
+   "flown_T_total_d": 3.373664687001712,
+   "cadence_d": 3.4369628605905813,
+   "slip_d": -0.23138928716910448,
+   "node_gap_deg": 0.009816531227117403,
+   "phase_gap_deg": 35.98099002765049,
+   "a_d_minus_a_k_km": -12.873374747890047,
+   "i_d_minus_i_k_deg": -0.018498686597713872,
+   "handoff_sep_km": 12.698055804037333,
+   "handoff_a_roe_m": [
+    8.510616835206747,
+    -14329.582482463695,
+    -1152.7451193670436,
+    -1648.4460327347801,
+    45.75324322404162,
+    162.10937184917626
+   ],
+   "handoff_a_de_km": 2.0115157551119442,
+   "terminal_n_rev": 15,
+   "terminal_iterations": 2,
+   "terminal_contractions": [
+    0.016187766580788344
+   ],
+   "terminal_dv_mps": 1.3968836205392114,
+   "hold_min_m": 151.23763934974775,
+   "hold_max_m": 151.97492648493443,
+   "keepout_m": 100.0,
+   "keepout_side": -1,
+   "term_min_sep_m": 113.28458778918636,
+   "term_min_sep_t_s": 76260.0,
+   "drift_m_per_rev": -0.11296957464204656,
+   "mass_kg": 299.48366274545646,
+   "wall_s": 8.941209077835083,
+   "timing_s": {
+    "target_seed": 2.255,
+    "rates": 1.365,
+    "plan": 1.489,
+    "arcs": 0.141,
+    "coast_sample": 0.381,
+    "terminal": 3.158,
+    "handoff_sample": 0.123,
+    "other": 0.029
+   },
+   "artifact": "artifacts/tour_fleet_flown/N4_plus21dose_v36/97_324_lam8_i00/leg_00_67893_67892.json",
+   "reanchor": {
+    "rel_rtn_m": [
+     0.3338870310612973,
+     -151.66423752646043,
+     -0.022050380265392425
+    ],
+    "rel_rtn_ms": [
+     0.17460927484131433,
+     8.043868575178534e-05,
+     -1.881074820778556e-05
+    ],
+    "flown_target_minus_catalogue_km": 15.8217216967546,
+    "chaser_shift_km": 15.821690177842942
+   }
+  }
+ ],
+ "stopped": null
+}

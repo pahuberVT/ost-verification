@@ -1,0 +1,17 @@
+# This file was written by tools/uncovered_set.py 1.0.0
+# For more information see 'uncovered__encounters_drifter_F0.1_s0__A10__t0.12__e1e+09__r10000.flog'
+# uncovered NORAD ids, one per line
+# survey artifact: data_scratch/survey__W1__v9.433__encounters_drifter_F0.1_s0__A10__t0.12__e1e+09__r10000.npz
+# survey artifact sha256: 1d736afcfd376dbc3b50c4a5613570ea2f8f76ce1cdc1301356d95a2879b30a0
+# population: /home/pahuber/Desktop/FinishedProjects/MINE/orbit-mission/fig_scratch/randomF/lists/randF0.1_s0.txt
+# population sha256: edce04f04a32ebf76a00d966b2234eada8fdf30ad743fb111746956d80c7140d
+# criterion: pooled_nats_resolved >= 9.556247 nats
+# population: 785
+# population with at least one pass: 783
+# population never reached by the encounter file: 2
+# covered: 783
+# uncovered: 2
+# encounter-file objects outside the population: 0
+62743
+63426
+# Unique job ID: 6b63947a49dd1678b29a1a0326461fcadb7d7a485c2cc61fa7429452ff344d4c

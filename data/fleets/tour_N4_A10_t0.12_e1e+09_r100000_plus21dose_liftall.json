@@ -1,0 +1,562 @@
+{
+ "campaign_d": 1582.7914981574372,
+ "dv_max": 4686.044705795071,
+ "groups": {
+  "43:326": {
+   "campaign_d": 0.0,
+   "dv_leg_max": 0.0,
+   "dv_max": 0.0,
+   "lam": 2.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 1,
+   "sweep": [
+    {
+     "campaign_d": 0.0,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 0.0,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "43:484": {
+   "campaign_d": 893.6595171813651,
+   "dv_leg_max": 166.65929190588244,
+   "dv_max": 1997.9883460776339,
+   "lam": 8.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 16,
+   "sweep": [
+    {
+     "campaign_d": 1051.6520263930965,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 893.6595171813651,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "43:530": {
+   "campaign_d": 396.6137692097392,
+   "dv_leg_max": 164.1180456005382,
+   "dv_max": 164.1180456005382,
+   "lam": 2.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 2,
+   "sweep": [
+    {
+     "campaign_d": 396.6137692097392,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 396.6137692097392,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "43:560": {
+   "campaign_d": 0.0,
+   "dv_leg_max": 0.0,
+   "dv_max": 0.0,
+   "lam": 2.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 1,
+   "sweep": [
+    {
+     "campaign_d": 0.0,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 0.0,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "53:327": {
+   "campaign_d": 23.616506198509924,
+   "dv_leg_max": 45.72094046953546,
+   "dv_max": 148.9261420575806,
+   "lam": 8.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 9,
+   "sweep": [
+    {
+     "campaign_d": 38.877505861694445,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 23.616506198509924,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "53:359": {
+   "campaign_d": 928.6590686104462,
+   "dv_leg_max": 183.83884504188842,
+   "dv_max": 1715.307729300223,
+   "lam": 8.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 13,
+   "sweep": [
+    {
+     "campaign_d": 1035.2564470918426,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 928.6590686104462,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "53:446": {
+   "campaign_d": 1078.844687803367,
+   "dv_leg_max": 200.875393266861,
+   "dv_max": 4686.044705795071,
+   "lam": 8.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 2,
+   "n_targets": 121,
+   "sweep": [
+    {
+     "campaign_d": 1810.173583815631,
+     "lam": 2.0,
+     "n_inspectors": 2
+    },
+    {
+     "campaign_d": 1078.844687803367,
+     "lam": 8.0,
+     "n_inspectors": 2
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "53:529": {
+   "campaign_d": 918.8672622379114,
+   "dv_leg_max": 186.2361917089642,
+   "dv_max": 3414.644127427297,
+   "lam": 8.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 29,
+   "sweep": [
+    {
+     "campaign_d": 1234.333049231331,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 918.8672622379114,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "70:435": {
+   "campaign_d": 189.26759917627638,
+   "dv_leg_max": 182.25300625397819,
+   "dv_max": 182.25300625397819,
+   "lam": 8.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 2,
+   "sweep": [
+    {
+     "campaign_d": 189.5245275004043,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 189.26759917627638,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "70:497": {
+   "campaign_d": 466.0279651864241,
+   "dv_leg_max": 173.33506339134675,
+   "dv_max": 173.33506339134675,
+   "lam": 2.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 2,
+   "sweep": [
+    {
+     "campaign_d": 466.0279651864241,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 466.0279651864241,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "70:569": {
+   "campaign_d": 1228.0665968257897,
+   "dv_leg_max": 185.77447426673461,
+   "dv_max": 1464.6799384056455,
+   "lam": 8.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 13,
+   "sweep": [
+    {
+     "campaign_d": 1263.173921402149,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 1228.0665968257897,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "97:324": {
+   "campaign_d": 3.668352147759686,
+   "dv_leg_max": 26.718955330337582,
+   "dv_max": 26.718955330337582,
+   "lam": 8.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 2,
+   "sweep": [
+    {
+     "campaign_d": 5.665011128329315,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 3.668352147759686,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "98:500": {
+   "campaign_d": 0.0,
+   "dv_leg_max": 0.0,
+   "dv_max": 0.0,
+   "lam": 2.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 1,
+   "n_targets": 1,
+   "sweep": [
+    {
+     "campaign_d": 0.0,
+     "lam": 2.0,
+     "n_inspectors": 1
+    },
+    {
+     "campaign_d": 0.0,
+     "lam": 8.0,
+     "n_inspectors": 1
+    }
+   ],
+   "t_leg_max_d": 600.0
+  },
+  "98:546": {
+   "campaign_d": 1582.7914981574372,
+   "dv_leg_max": 174.99861454875025,
+   "dv_max": 1235.7135076837285,
+   "lam": 8.0,
+   "m_max": 400,
+   "n_dead_end": 0,
+   "n_inspectors": 2,
+   "n_targets": 27,
+   "sweep": [
+    {
+     "campaign_d": 1611.2178966422275,
+     "lam": 2.0,
+     "n_inspectors": 2
+    },
+    {
+     "campaign_d": 1582.7914981574372,
+     "lam": 8.0,
+     "n_inspectors": 2
+    }
+   ],
+   "t_leg_max_d": 600.0
+  }
+ },
+ "inspectors": [
+  {
+   "group": "43:326",
+   "id": "43_326_lam2_i00",
+   "lam": 2.0,
+   "m_max": 400,
+   "n_legs": 0,
+   "n_targets": 1,
+   "sha12": "9938b026b34d",
+   "sized_dv": 0.0,
+   "sized_t_d": 0.0,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/43_326_lam2_i00.json"
+  },
+  {
+   "group": "43:484",
+   "id": "43_484_lam8_i00",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 15,
+   "n_targets": 16,
+   "sha12": "42a465408590",
+   "sized_dv": 1997.9883460776339,
+   "sized_t_d": 893.6595171813651,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/43_484_lam8_i00.json"
+  },
+  {
+   "group": "43:530",
+   "id": "43_530_lam2_i00",
+   "lam": 2.0,
+   "m_max": 400,
+   "n_legs": 1,
+   "n_targets": 2,
+   "sha12": "168e84485bf2",
+   "sized_dv": 164.1180456005382,
+   "sized_t_d": 396.6137692097392,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/43_530_lam2_i00.json"
+  },
+  {
+   "group": "43:560",
+   "id": "43_560_lam2_i00",
+   "lam": 2.0,
+   "m_max": 400,
+   "n_legs": 0,
+   "n_targets": 1,
+   "sha12": "c26aad3f1e3b",
+   "sized_dv": 0.0,
+   "sized_t_d": 0.0,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/43_560_lam2_i00.json"
+  },
+  {
+   "group": "53:327",
+   "id": "53_327_lam8_i00",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 8,
+   "n_targets": 9,
+   "sha12": "8983ab77182b",
+   "sized_dv": 148.9261420575806,
+   "sized_t_d": 23.616506198509924,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/53_327_lam8_i00.json"
+  },
+  {
+   "group": "53:359",
+   "id": "53_359_lam8_i00",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 12,
+   "n_targets": 13,
+   "sha12": "9d86ae1c369e",
+   "sized_dv": 1715.307729300223,
+   "sized_t_d": 928.6590686104462,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/53_359_lam8_i00.json"
+  },
+  {
+   "group": "53:446",
+   "id": "53_446_lam8_i00",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 66,
+   "n_targets": 67,
+   "sha12": "80b93a209d2b",
+   "sized_dv": 4686.044705795071,
+   "sized_t_d": 927.9801032529632,
+   "stop": "cap",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/53_446_lam8_i00.json"
+  },
+  {
+   "group": "53:446",
+   "id": "53_446_lam8_i01",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 53,
+   "n_targets": 54,
+   "sha12": "7b51822dca62",
+   "sized_dv": 3698.19511100715,
+   "sized_t_d": 1078.844687803367,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/53_446_lam8_i01.json"
+  },
+  {
+   "group": "53:529",
+   "id": "53_529_lam8_i00",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 28,
+   "n_targets": 29,
+   "sha12": "cd073679609b",
+   "sized_dv": 3414.644127427297,
+   "sized_t_d": 918.8672622379114,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/53_529_lam8_i00.json"
+  },
+  {
+   "group": "70:435",
+   "id": "70_435_lam8_i00",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 1,
+   "n_targets": 2,
+   "sha12": "447b46f4b1ab",
+   "sized_dv": 182.25300625397819,
+   "sized_t_d": 189.26759917627638,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/70_435_lam8_i00.json"
+  },
+  {
+   "group": "70:497",
+   "id": "70_497_lam2_i00",
+   "lam": 2.0,
+   "m_max": 400,
+   "n_legs": 1,
+   "n_targets": 2,
+   "sha12": "bf0fc726ba10",
+   "sized_dv": 173.33506339134675,
+   "sized_t_d": 466.0279651864241,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/70_497_lam2_i00.json"
+  },
+  {
+   "group": "70:569",
+   "id": "70_569_lam8_i00",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 12,
+   "n_targets": 13,
+   "sha12": "dcd0df0a656e",
+   "sized_dv": 1464.6799384056455,
+   "sized_t_d": 1228.0665968257897,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/70_569_lam8_i00.json"
+  },
+  {
+   "group": "97:324",
+   "id": "97_324_lam8_i00",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 1,
+   "n_targets": 2,
+   "sha12": "3049362bda37",
+   "sized_dv": 26.718955330337582,
+   "sized_t_d": 3.668352147759686,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/97_324_lam8_i00.json"
+  },
+  {
+   "group": "98:500",
+   "id": "98_500_lam2_i00",
+   "lam": 2.0,
+   "m_max": 400,
+   "n_legs": 0,
+   "n_targets": 1,
+   "sha12": "6aeb9cac44fc",
+   "sized_dv": 0.0,
+   "sized_t_d": 0.0,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/98_500_lam2_i00.json"
+  },
+  {
+   "group": "98:546",
+   "id": "98_546_lam8_i00",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 13,
+   "n_targets": 14,
+   "sha12": "c2cc34623546",
+   "sized_dv": 1235.7135076837285,
+   "sized_t_d": 1582.7914981574372,
+   "stop": "cap",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/98_546_lam8_i00.json"
+  },
+  {
+   "group": "98:546",
+   "id": "98_546_lam8_i01",
+   "lam": 8.0,
+   "m_max": 400,
+   "n_legs": 12,
+   "n_targets": 13,
+   "sha12": "0ec7e6c08e75",
+   "sized_dv": 846.8861493865256,
+   "sized_t_d": 358.6468958051795,
+   "stop": "all served",
+   "t_leg_max_d": 600.0,
+   "tour": "ep_tour/validate/fleets/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall/98_546_lam8_i01.json"
+  }
+ ],
+ "n_dead_end": 0,
+ "n_inspectors": 16,
+ "n_single": 3,
+ "n_targets": 239,
+ "name": "tour_N4_A10_t0.12_e1e+09_r100000_plus21dose_liftall",
+ "run": "artifacts/tour_fleet/tour_N4_A10_t0.12_e1e+09_r100000_plus21dose/final_liftall",
+ "sha12": "423f62b6634b",
+ "tag": "[EST] ep_tour.fleet sizing; drag NOT priced; dwell 1 rev; chosen = fewest inspectors then shortest campaign"
+}

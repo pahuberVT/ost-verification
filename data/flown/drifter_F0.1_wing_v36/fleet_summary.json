@@ -1,0 +1,27 @@
+{
+ "fleet": "conops/fleets/tour_F0.1_s0_A10_t0.12_e1e+09_r10000.json",
+ "fleet_sha12": "7f9faef4360d",
+ "n_inspectors": 1,
+ "n_flown_this_pass": 1,
+ "n_done": 1,
+ "n_stuck": 0,
+ "n_other": 0,
+ "stuck": [],
+ "other": [],
+ "results": [
+  {
+   "id": "43_484_lam8_i00",
+   "status": "done",
+   "dv": 174.98470966733805,
+   "t_d": 133.67833134757473,
+   "legs": 1,
+   "worst_leg": 174.98470966733805,
+   "wall_s": 79.45176863670349
+  }
+ ],
+ "wall_h": 0.02207018534342448,
+ "dv_max": 174.98470966733805,
+ "t_max_d": 133.67833134757473,
+ "worst_leg": 174.98470966733805,
+ "dv_sum": 174.98470966733805
+}

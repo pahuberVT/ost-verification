@@ -1,0 +1,16 @@
+{
+ "run": "artifacts/tour_fleet_flown/drifter_F0.1_wing_v36",
+ "archive_dir": "/home/pahuber/orbit-runs/ephem/drifter_F0.1_wing_v36",
+ "inspectors": {
+  "43_484_lam8_i00": {
+   "archive": "/home/pahuber/orbit-runs/ephem/drifter_F0.1_wing_v36/43_484_lam8_i00.tar.gz",
+   "sha256": "bf69d54209a97852b276fdc0b2f7fd6051138faaf63f52f429c54826a89b9f79",
+   "bytes": 1786291,
+   "n_legs": 1,
+   "legs": [
+    "leg_00_63426_62743.json"
+   ],
+   "packed_utc": "2026-10-01T02:38:06Z"
+  }
+ }
+}

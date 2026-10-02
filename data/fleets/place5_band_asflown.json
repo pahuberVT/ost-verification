@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "name": "place5_band",
+    "catalogue_sha12": "5d5748ef7886",
+    "inc_deg": 53.16,
+    "seed_alts_km": [
+      358,
+      486,
+      552,
+      573,
+      490
+    ],
+    "raans_deg": [
+      0,
+      90,
+      180,
+      270,
+      45
+    ],
+    "note": "Placement study N=5: minimal4_band + 1 smart adds (gap-targeted, drift-only, 53.16 deg). Denominator 7852.",
+    "n_seeds": 5
+  },
+  "seeds": [
+    {
+      "seed_id": "place_a358_r0",
+      "a_m": 6736137.0,
+      "e": 0.0,
+      "i_rad": 0.9278170303601855,
+      "raan_rad": 0.0,
+      "argp_rad": 0.0,
+      "nu_rad": 0.0,
+      "mass_kg": 260.0,
+      "cd": 2.2,
+      "area_m2": 2.0,
+      "mode": "drifter",
+      "da_m": -1500.0
+    },
+    {
+      "seed_id": "place_a486_r90",
+      "a_m": 6864137.0,
+      "e": 0.0,
+      "i_rad": 0.9278170303601855,
+      "raan_rad": 1.5707963267948966,
+      "argp_rad": 0.0,
+      "nu_rad": 0.0,
+      "mass_kg": 260.0,
+      "cd": 2.2,
+      "area_m2": 2.0,
+      "mode": "drifter",
+      "da_m": -1500.0
+    },
+    {
+      "seed_id": "place_a552_r180",
+      "a_m": 6930137.0,
+      "e": 0.0,
+      "i_rad": 0.9278170303601855,
+      "raan_rad": 3.141592653589793,
+      "argp_rad": 0.0,
+      "nu_rad": 0.0,
+      "mass_kg": 260.0,
+      "cd": 2.2,
+      "area_m2": 2.0,
+      "mode": "drifter",
+      "da_m": -1500.0
+    },
+    {
+      "seed_id": "place_a573_r270",
+      "a_m": 6951137.0,
+      "e": 0.0,
+      "i_rad": 0.9278170303601855,
+      "raan_rad": 4.71238898038469,
+      "argp_rad": 0.0,
+      "nu_rad": 0.0,
+      "mass_kg": 260.0,
+      "cd": 2.2,
+      "area_m2": 2.0,
+      "mode": "drifter",
+      "da_m": -1500.0
+    },
+    {
+      "seed_id": "place_a490_r45",
+      "a_m": 6868137.0,
+      "e": 0.0,
+      "i_rad": 0.9278170303601855,
+      "raan_rad": 0.7853981633974483,
+      "argp_rad": 0.0,
+      "nu_rad": 0.0,
+      "mass_kg": 260.0,
+      "cd": 2.2,
+      "area_m2": 2.0,
+      "mode": "drifter",
+      "da_m": -1500.0
+    }
+  ]
+}
